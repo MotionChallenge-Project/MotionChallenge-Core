@@ -12,6 +12,16 @@ from .sdk import BodyState, StatePacket
 from .validation import sha256_file
 
 
+def forward_kinematics(model, data):
+    """Update poses and body-origin Jacobians without solving dynamics.
+
+    MuJoCo documents kinematics + comPos as the required stages for mj_jacBody.
+    Use this only for read-only reference/state reconstruction, never stepping.
+    """
+    mujoco.mj_kinematics(model, data)
+    mujoco.mj_comPos(model, data)
+
+
 def command_values(command, size):
     values = [np.asarray(getattr(command, n), dtype=np.float64) for n in (
         'joint_position_target_rad', 'joint_velocity_target_rad_s',
@@ -84,7 +94,7 @@ class World:
         d = self.reference_data
         d.qpos[:] = self._qpos(f)
         mujoco.mj_differentiatePos(self.model, d.qvel, hi-lo, qa, qb)
-        mujoco.mj_forward(self.model, d)
+        forward_kinematics(self.model, d)
         bodies = self._bodies(d)
         root = next(b for b in bodies if b.name == self.profile['root_body'])
         f = replace(f, joint_velocity_rad_s=tuple(d.qvel[self.vadr]),

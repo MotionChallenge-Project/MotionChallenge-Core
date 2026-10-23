@@ -84,6 +84,29 @@ class NoTerminationTests(unittest.TestCase):
                 self.assertAlmostEqual(derived['metric_means_over_observed_prefix'][k],v,places=12)
             self.assertEqual(check['derived_prefix']['samples'],early['sample_count'])
             self.assertEqual(verify(prefix_output,suite,PROFILE,prefix_config,root,controller)['samples'],early['sample_count'])
+            # Parallel verification must produce byte-identical derived evidence
+            # and fail closed when any worker detects a corrupted metric.
+            second_source = root/'second.csv'
+            second_source.write_text(source.read_text())
+            two_manifest = copy.deepcopy(manifest)
+            two_manifest['files'].append({'path':second_source.name,'sha256':sha256_file(second_source)})
+            suite.write_text(json.dumps(two_manifest))
+            two_result = copy.deepcopy(result)
+            two_result['clips'].append({**full, 'id':second_source.name})
+            two_result['suite_sha256'] = sha256_file(suite)
+            output.write_text(json.dumps(two_result))
+            serial = verify(output,suite,PROFILE,config,root,controller,prefix_output,prefix_config,jobs=1)
+            serial_bytes = prefix_output.read_bytes()
+            parallel = verify(output,suite,PROFILE,config,root,controller,prefix_output,prefix_config,jobs=2)
+            self.assertEqual(serial, parallel)
+            self.assertEqual(serial_bytes, prefix_output.read_bytes())
+            corrupted = copy.deepcopy(two_result)
+            corrupted['clips'][1]['metric_means_over_observed_prefix']['joint_mae_rad'] += .1
+            output.write_text(json.dumps(corrupted))
+            with self.assertRaisesRegex(ValueError,'recomputation mismatch'):
+                verify(output,suite,PROFILE,config,root,controller,jobs=2)
+            suite.write_text(json.dumps(manifest))
+            output.write_text(json.dumps(result))
             mismatched = {**protocol,'terminate_on_failure':True,'metric_period_s':.01}
             prefix_config.write_text(json.dumps(mismatched))
             with self.assertRaisesRegex(ValueError,'different physical or scoring'):

@@ -14,10 +14,8 @@ import sys
 import tempfile
 import threading
 
-import mujoco
-
 from .batch_physics import BatchPool, Request
-from .physics import World, command_values
+from .physics import World, command_values, forward_kinematics
 from .progress import Progress
 
 
@@ -36,8 +34,7 @@ class RemoteWorld(World):
         self.data.qvel[:] = qvel
         # State packets need body-origin FK/Jacobians, not an extra constraint
         # solve. The authoritative persistent solver state stays in Batch.
-        mujoco.mj_fwdPosition(self.model, self.data)
-        mujoco.mj_fwdVelocity(self.model, self.data)
+        forward_kinematics(self.model, self.data)
 
     def reset(self, motion):
         super().reset(motion)
@@ -84,7 +81,9 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                             completed=sum(e['completed'] for e in states.values()), total=len(selected),
                             passed=sum(e['passed'] for e in states.values()), active=active, backend='batch')
     try:
-        with tempfile.TemporaryDirectory(prefix='mc-batch-') as directory:
+        # Keep the UNIX socket path short and canonical on macOS.
+        socket_root = '/tmp' if sys.platform == 'darwin' else None
+        with tempfile.TemporaryDirectory(prefix='mc-batch-', dir=socket_root) as directory:
             address = str(Path(directory)/'physics.sock')
             with Listener(address, family='AF_UNIX') as listener:
                 # A crashed child must not leave the coordinator in accept().

@@ -20,6 +20,7 @@ computes both time ranges from the same verified trajectory. A unified
 source record. `rollout/` retains pose traces and verification evidence;
 `summary.json` records progress. Downloads and evaluation report every five
 seconds. `--termination early` and `--termination none` remain diagnostic options.
+`--jobs` controls CPU rollout slots and independent trace verification workers.
 
 ## Evaluation
 

@@ -3,8 +3,9 @@ from pathlib import Path
 import unittest
 
 import numpy as np
+import mujoco
 
-from motion_challenge.physics import World, tracking_sample
+from motion_challenge.physics import World, forward_kinematics, tracking_sample
 from motion_challenge.reference import Motion
 from motion_challenge.sdk import ControlCommand
 
@@ -39,6 +40,24 @@ class PhysicsTests(unittest.TestCase):
                 np.testing.assert_allclose(b.linear_velocity_world_m_s,0,atol=1e-12)
         self.world.reset(motion)
         self.assertEqual(self.world.state().time_s,0.)
+
+    def test_kinematic_packets_match_full_dynamics_at_random_poses(self):
+        rng = np.random.default_rng(317)
+        world = self.world
+        for _ in range(80):
+            # Includes ground penetration and high velocities: the packet must
+            # not depend on the contact/constraint solve that is being skipped.
+            q = world.model.qpos0.copy()
+            q[:3] = rng.uniform(-1, 1, 3)
+            quaternion = rng.normal(size=4)
+            q[3:7] = quaternion / np.linalg.norm(quaternion)
+            q[world.qadr] = rng.uniform(-2, 2, len(world.joints))
+            world.data.qpos[:] = q
+            world.data.qvel[:] = rng.normal(size=world.model.nv) * 4
+            forward_kinematics(world.model, world.data)
+            packet = world.state()
+            mujoco.mj_forward(world.model, world.data)
+            self.assertEqual(packet, world.state())
 
     def test_failure_uses_reference_gravity_z_not_yaw_angle(self):
         import json

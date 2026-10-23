@@ -101,7 +101,7 @@ def main(adapter_root=None):
     p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
     p.add_argument('--backend', choices=['batch'], default='batch', help=argparse.SUPPRESS)
     p.add_argument('--termination', choices=['both', 'early', 'none'], default='both',
-                   help='Run both rollout modes (default), or select one for diagnostics')
+                   help='Compute both metric scopes from one full rollout (default), or select a diagnostic mode')
     p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to batch slots')
     p.add_argument('--progress-interval', type=float, default=5.0)
     p.add_argument('--offline', action='store_true')
@@ -248,7 +248,7 @@ def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False)
         shutil.copyfile(results[0], output/'result.json')
         options = ({'prefix_result_path': output/'prefix-result.json',
                     'prefix_protocol_path': lafan_paths('early')['protocol']} if derive_prefix else {})
-        check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, **options)
+        check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, jobs=count, **options)
         verification_finished = time.monotonic()
         receipt['timings_s'] = {'rollout': rollout_finished-run_started,
                                'verification': verification_finished-rollout_finished}

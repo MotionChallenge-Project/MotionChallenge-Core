@@ -76,6 +76,8 @@ def main(adapter_root=None):
     p.add_argument('--output', type=Path, help='New directory outside any Git repository')
     p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
     p.add_argument('--backend', choices=['batch', 'serial'], default='batch')
+    p.add_argument('--termination', choices=['early', 'none'], default='early',
+                   help='Stop at first failure, or continue the complete motion while recording failures')
     p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to batch slots')
     p.add_argument('--progress-interval', type=float, default=5.0)
     p.add_argument('--offline', action='store_true')
@@ -96,7 +98,7 @@ def main(adapter_root=None):
     output.mkdir(parents=True, exist_ok=True)
     progress = Progress(output/'progress.json', a.progress_interval)
     a.data = external_output_path(a.data.expanduser())
-    paths = lafan_paths()
+    paths = lafan_paths(a.termination)
     manifest = json.loads(paths['suite'].read_text())
     if not a.offline:
         print(json.dumps(fetch_dataset(manifest, a.data, progress)), flush=True)
@@ -119,6 +121,7 @@ def main(adapter_root=None):
                'source_runtime_sha256': sha256_file(original), 'resolved_runtime_sha256': sha256_file(resolved),
                'suite': a.suite, 'started_utc': stamp, 'author_inference_review': 'not_granted_by_runner',
                'output': str(output), 'status': 'running', 'backend': a.backend,
+               'termination_mode': 'early_termination' if a.termination == 'early' else 'no_termination',
                'batch_size': a.jobs if a.backend == 'batch' else 1}
     receipt_path = output/'receipt.json'
     receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')

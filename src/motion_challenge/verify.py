@@ -35,6 +35,12 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         if sha256_file(path) != result[key]:
             raise ValueError(f'{key} mismatch')
     protocol = json.loads(Path(protocol_path).read_text())
+    terminate_on_failure = protocol.get('terminate_on_failure', True)
+    if not isinstance(terminate_on_failure, bool):
+        raise ValueError('terminate_on_failure must be boolean')
+    mode = 'early_termination' if terminate_on_failure else 'no_termination'
+    if result.get('termination_mode', mode) != mode:
+        raise ValueError('termination mode differs from protocol')
     if result.get('mujoco_version') != mujoco.__version__:
         raise ValueError('verification must use the recorded MuJoCo version')
     if protocol.get('mujoco_version', mujoco.__version__) != mujoco.__version__:
@@ -60,9 +66,10 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         if sha256_file(trace) != clip['trace']['sha256']:
             raise ValueError('pose trace hash mismatch')
         samples, last_valid, failure, last_time = [], 0.0, [], 0.0
+        first_failure_time = None
         with gzip.open(trace, 'rt') as stream:
             for line in stream:
-                if len(line) > 100000 or failure:
+                if len(line) > 100000 or (failure and terminate_on_failure):
                     raise ValueError('invalid pose trace or continued after failure')
                 p = json.loads(line)
                 t = p['time_s']
@@ -82,7 +89,10 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
                 world.data.qvel[:] = 0
                 world.data.time = t
                 mujoco.mj_forward(world.model,world.data)
-                failure, metrics = tracking_sample(world.state(),world.reference(t),protocol)
+                current_failure, metrics = tracking_sample(world.state(),world.reference(t),protocol)
+                if current_failure and first_failure_time is None:
+                    failure = current_failure
+                    first_failure_time = t
                 samples.append(metrics)
                 if len(samples) % 100 == 0:
                     progress.emit('verification', completed=clip_index, total=len(ids), clip=clip['id'],
@@ -94,13 +104,15 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         success = not failure and last_valid >= motion.duration_s-1e-9
         if not failure and not clip['truncated_smoke'] and not success:
             raise ValueError('non-failed full episode ended before final timestamp')
+        if not terminate_on_failure and not clip['truncated_smoke'] and last_time < motion.duration_s-1e-9:
+            raise ValueError('no-termination episode ended before final timestamp')
         if success != clip['success'] or failure != clip['failure_reasons']:
             raise ValueError('success/failure recomputation mismatch')
         if not math.isclose(last_valid/motion.duration_s,clip['completion'],abs_tol=1e-9):
             raise ValueError('completion recomputation mismatch')
         if not math.isclose(last_time,clip['observed_time_s'],abs_tol=1e-8):
             raise ValueError('observed duration mismatch')
-        if not failure_time_matches(clip['failure_time_s'], last_time, bool(failure)):
+        if not failure_time_matches(clip['failure_time_s'], first_failure_time, bool(failure)):
             raise ValueError('failure timestamp mismatch')
         if set(clip['metric_means_over_observed_prefix']) != set(samples[0]):
             raise ValueError('missing or extra protocol metrics')

@@ -83,6 +83,10 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
     end = motion.duration_s if max_duration is None else min(max_duration, motion.duration_s)
     control_i, metric_i = 1, 1
     samples, failure, last_valid = [], [], 0.0
+    first_failure_time = None
+    terminate_on_failure = protocol.get('terminate_on_failure', True)
+    if not isinstance(terminate_on_failure, bool):
+        raise ValueError('terminate_on_failure must be boolean')
     started = time.monotonic()
     while world.data.time < end-1e-9:
         next_t = min(control_i*period, metric_i*metric_dt, end)
@@ -91,7 +95,10 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
         if on_step:
             on_step(float(world.data.time), end)
         if next_t >= metric_i*metric_dt-1e-9 or next_t >= end-1e-9:
-            failure, values = tracking_sample(state, world.reference(next_t), protocol)
+            current_failure, values = tracking_sample(state, world.reference(next_t), protocol)
+            if current_failure and first_failure_time is None:
+                failure = current_failure
+                first_failure_time = float(world.data.time)
             samples.append({'time_s': next_t, **values})
             if trace is not None:
                 trace.write(json.dumps({'time_s':next_t,
@@ -99,9 +106,10 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
                     'root_position_world_m':state.root_position_world_m,
                     'root_orientation_xyzw':state.root_orientation_xyzw}, allow_nan=False)+'\n')
             metric_i += 1
-            if failure:
+            if failure and terminate_on_failure:
                 break
-            last_valid = next_t
+            if first_failure_time is None:
+                last_valid = next_t
         if next_t >= end-1e-9:
             break
         if next_t >= control_i*period-1e-9:
@@ -112,7 +120,7 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
     return {'success': not failure and last_valid >= motion.duration_s-1e-9,
         'duration_s': motion.duration_s, 'observed_time_s': float(world.data.time),
         'completion': last_valid/motion.duration_s,
-        'failure_time_s': float(world.data.time) if failure else None,
+        'failure_time_s': first_failure_time,
         'failure_reasons': failure, 'sample_count': len(samples),
         'metric_means_over_observed_prefix': means, 'last_sample': samples[-1] if samples else None,
         'wall_time_s': time.monotonic()-started,
@@ -164,6 +172,9 @@ def main():
         raise ValueError('installed MuJoCo does not match the frozen protocol')
     a.output.parent.mkdir(parents=True, exist_ok=True)
     results = {'kind': 'development_evaluation', 'official': False,
+        'protocol_id': protocol['id'],
+        'termination_mode': 'early_termination' if protocol.get('terminate_on_failure', True) else 'no_termination',
+        'metric_scope': 'observed_prefix' if protocol.get('terminate_on_failure', True) else 'full_motion',
         'controller_id': runtime['id'], 'controller_config_sha256': sha256_file(a.controller),
         'suite_sha256': sha256_file(a.suite), 'protocol_sha256': sha256_file(a.protocol),
         'robot_profile_sha256': sha256_file(a.robot), 'mujoco_version': __import__('mujoco').__version__,

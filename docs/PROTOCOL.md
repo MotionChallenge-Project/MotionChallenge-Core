@@ -107,3 +107,22 @@ It validates hashes and independently recomputes FK, failures and metrics from
 the compressed pose trace stored beside the external result. This checks
 consistency; an official service must still rerun the controller.
 
+
+## Early termination and full-motion evaluation
+
+`uv run evaluate.py` stops each clip on its first tracking failure.
+`uv run evaluate.py --termination none` selects a separate frozen protocol and
+continues to the exact final timestamp, without resets or reference changes.
+Both modes retain the same failure predicates. Success means no failure at any
+metric sample, and completion is the uninterrupted fraction before the first
+failure. Later recovery does not erase a failure. Full-motion metrics include
+post-failure states; invalid numerics or inference errors invalidate the run.
+
+The headline position metric is mean per-body position error (MPBPE): mean
+Euclidean error across 14 named body origins, averaged over time, then equally
+across clips. Reports show millimeters. Each rollout mode has three alignment
+views: no alignment, pelvis XY centering, and pelvis XY plus closest yaw. This
+gives six values per model; the three full-motion values require a fresh run.
+The compatibility JSON keys remain `mpjpe_*_m` and
+`metric_means_over_observed_prefix`; `metric_scope` identifies whether the
+observed trajectory is a failure prefix or the entire motion.

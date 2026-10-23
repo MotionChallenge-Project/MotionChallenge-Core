@@ -98,8 +98,8 @@ def main(adapter_root=None):
     p.add_argument('--output', type=Path, help='New directory outside any Git repository')
     p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
     p.add_argument('--backend', choices=['batch'], default='batch', help=argparse.SUPPRESS)
-    p.add_argument('--termination', choices=['early', 'none'], default='early',
-                   help='Stop at first failure, or continue the complete motion while recording failures')
+    p.add_argument('--termination', choices=['both', 'early', 'none'], default='both',
+                   help='Run both rollout modes (default), or select one for diagnostics')
     p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to batch slots')
     p.add_argument('--progress-interval', type=float, default=5.0)
     p.add_argument('--offline', action='store_true')
@@ -120,7 +120,7 @@ def main(adapter_root=None):
     output.mkdir(parents=True, exist_ok=True)
     progress = Progress(output/'progress.json', a.progress_interval)
     a.data = external_output_path(a.data.expanduser())
-    paths = lafan_paths(a.termination)
+    paths = lafan_paths('early')
     manifest = json.loads(paths['suite'].read_text())
     if not a.offline:
         print(json.dumps(fetch_dataset(manifest, a.data, progress)), flush=True)
@@ -138,14 +138,69 @@ def main(adapter_root=None):
     if runtime.get('artifacts') or a.artifact:
         runtime['artifacts'] = resolve_artifacts(runtime, root, a.artifact, a.offline, progress)
     runtime['adapter_root'] = str(root)
+    before = source_snapshot(root)
+    if a.termination != 'both':
+        run_mode(root, a, runtime, output, a.termination, before, stamp)
+        return
+    run_pair(root, a, runtime, output, before, stamp)
+
+
+def run_pair(root, args, runtime, output, source, stamp):
+    """Keep independently verifiable mode records and a compact combined index."""
+    record = {'schema': 'motion-challenge/paired-evaluation-v1', 'status': 'running',
+              'started_utc': stamp, 'source': source,
+              'checkpoint_sha256': runtime.get('weights_sha256'), 'modes': {}}
+    summary_path = output/'summary.json'
+    def save():
+        temporary = summary_path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(record, indent=2)+'\n')
+        temporary.replace(summary_path)
+    save()
+    errors = []
+    for mode in ('early', 'none'):
+        destination = output/mode
+        destination.mkdir()
+        print(json.dumps({'phase': 'rollout_mode', 'mode': mode, 'output': str(destination)}), flush=True)
+        try:
+            receipt = run_mode(root, args, runtime, destination, mode, source, stamp)
+        except Exception as error:
+            # Preserve completed evidence and still attempt the other rollout.
+            errors.append((mode, error))
+            receipt = {'status': 'error', 'error': f'{type(error).__name__}: {error}'}
+        item = {'status': receipt['status'], 'receipt': f'{mode}/receipt.json'}
+        if 'error' in receipt:
+            item['error'] = receipt['error']
+        result_path = destination/'result.json'
+        if receipt['status'] == 'trace_verified':
+            result = json.loads(result_path.read_text())
+            item.update(result=f'{mode}/result.json', success_count=result['success_count'],
+                        macro_completion=result['macro_completion'],
+                        metrics=result['macro_metrics_over_observed_prefix'],
+                        metric_scope=result.get('metric_scope', 'observed_prefix'))
+        record['modes'][mode] = item
+        save()
+    record['finished_utc'] = datetime.now(timezone.utc).isoformat()
+    statuses = {v['status'] for v in record['modes'].values()}
+    record['status'] = ('trace_verified' if statuses == {'trace_verified'} else
+                        'verified_smoke' if statuses == {'verified_smoke'} else 'error')
+    save()
+    print(json.dumps({'status': record['status'], 'summary': str(summary_path)}), flush=True)
+    if errors:
+        raise RuntimeError('Rollout failed: ' + ', '.join(mode for mode, _ in errors)) from errors[0][1]
+    return record
+
+
+def run_mode(root, a, runtime, output, mode, before, stamp):
+    paths = lafan_paths(mode)
+    manifest = json.loads(paths['suite'].read_text())
+    progress = Progress(output/'progress.json', a.progress_interval)
     resolved = output/'runtime.json'
     resolved.write_text(json.dumps(runtime, indent=2)+'\n')
-    before = source_snapshot(root)
     receipt = {'submitter': 'local-run', 'source': before,
-               'source_runtime_sha256': sha256_file(original), 'resolved_runtime_sha256': sha256_file(resolved),
+               'source_runtime_sha256': sha256_file(root/'runtime.json'), 'resolved_runtime_sha256': sha256_file(resolved),
                'suite': a.suite, 'started_utc': stamp, 'author_inference_review': 'not_granted_by_runner',
                'output': str(output), 'status': 'running', 'backend': a.backend,
-               'termination_mode': 'early_termination' if a.termination == 'early' else 'no_termination',
+               'termination_mode': 'early_termination' if mode == 'early' else 'no_termination',
                'batch_size': a.jobs}
     receipt_path = output/'receipt.json'
     receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
@@ -208,3 +263,5 @@ def main(adapter_root=None):
         receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
     progress.emit('complete', force=True, status=receipt['status'], receipt=str(receipt_path))
     print(json.dumps({'status': receipt['status'], 'receipt': str(receipt_path)}, indent=2))
+
+    return receipt

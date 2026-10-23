@@ -84,7 +84,11 @@ class BatchPool:
                 self.dt[ids] = np.minimum(world.profile['physics_dt_s'], target[mask]-self.time[ids])
                 torque = kp*(q-self.qpos[np.ix_(ids, world.qadr)]) + kd*(qd-self.qvel[np.ix_(ids, world.vadr)]) + ff
                 self.ctrl[ids] = np.clip(torque, -world.limits, world.limits)
+                previous_time = self.time[ids].copy()
+                expected_time = previous_time + self.dt[ids]
                 self.batch.step(ids=ids, nstep=1)
+                if not np.allclose(self.time[ids], expected_time, rtol=0, atol=1e-10):
+                    raise FloatingPointError('MuJoCo reset or discontinuous batch simulation time')
                 if not np.isfinite(self.qpos[ids]).all() or not np.isfinite(self.qvel[ids]).all():
                     raise FloatingPointError('non-finite batch physics state')
             # Match World.advance: restore dt BEFORE the final mj_forward.

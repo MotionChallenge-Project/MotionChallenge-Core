@@ -13,9 +13,11 @@ uv sync
 
 Use a model repository to run its checkpoint. Each adapter pins this core as the
 root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
-MuJoCo 3.17 CPU batch evaluation is the default (`--jobs 8`); downloads and
-evaluation report progress every 5 seconds. Use `--termination none` to continue
-after tracking failures and measure full-motion errors.
+One command runs both early-termination and full-motion evaluation with MuJoCo
+3.17 CPU batch (`--jobs 8`). Downloads and evaluation report progress every five
+seconds. Outputs contain `early/`, `none/` and a combined `summary.json`; each
+mode has its own verified receipt. Use `--termination early` or `none` only when
+you need a single mode. No branch switching is needed.
 
 ## Evaluation
 

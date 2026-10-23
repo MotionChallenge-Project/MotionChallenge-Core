@@ -126,7 +126,10 @@ class World:
                 # PD and actuator saturation happen on every physics step.
                 torque = kp*(q-self.data.qpos[self.qadr]) + kd*(qd-self.data.qvel[self.vadr]) + ff
                 self.data.ctrl[:] = np.clip(torque, -self.limits, self.limits)
+                expected_time = self.data.time + self.model.opt.timestep
                 mujoco.mj_step(self.model, self.data)
+                if abs(self.data.time - expected_time) > 1e-10:
+                    raise FloatingPointError('MuJoCo reset or discontinuous simulation time')
                 if not np.isfinite(self.data.qpos).all() or not np.isfinite(self.data.qvel).all():
                     raise FloatingPointError('non-finite physics state')
         finally:

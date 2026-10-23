@@ -21,6 +21,7 @@ from .resources import lafan_paths
 from .progress import Progress, copy_download
 from .validation import external_output_path, sha256_file
 from .verify import verify
+from .paired import combine
 
 
 def artifact(path, expected_hash, url=None, offline=False, progress=None):
@@ -183,6 +184,20 @@ def run_pair(root, args, runtime, output, source, stamp):
     statuses = {v['status'] for v in record['modes'].values()}
     record['status'] = ('trace_verified' if statuses == {'trace_verified'} else
                         'verified_smoke' if statuses == {'verified_smoke'} else 'error')
+    if record['status'] == 'trace_verified':
+        try:
+            results = [json.loads((output/mode/'result.json').read_text()) for mode in ('early', 'none')]
+            combined = combine(*results, source, runtime['weights_sha256'])
+            combined['components'] = {mode: {
+                'result': f'{mode}/result.json', 'result_sha256': sha256_file(output/mode/'result.json'),
+                'receipt': f'{mode}/receipt.json', 'receipt_sha256': sha256_file(output/mode/'receipt.json')
+            } for mode in ('early', 'none')}
+            (output/'result.json').write_text(json.dumps(combined, indent=2)+'\n')
+            record['result'] = 'result.json'
+        except Exception as error:
+            record.update(status='error', error=f'{type(error).__name__}: {error}')
+            save()
+            raise
     save()
     print(json.dumps({'status': record['status'], 'summary': str(summary_path)}), flush=True)
     if errors:

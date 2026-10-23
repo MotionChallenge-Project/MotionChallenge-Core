@@ -15,8 +15,9 @@ Use a model repository to run its checkpoint. Each adapter pins this core as the
 root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
 One command runs both early-termination and full-motion evaluation with MuJoCo
 3.17 CPU batch (`--jobs 8`). Downloads and evaluation report progress every five
-seconds. Outputs contain `early/`, `none/` and a combined `summary.json`; each
-mode has its own verified receipt. Use `--termination early` or `none` only when
+seconds. A unified `result.json` contains success, completion, all six body-error views,
+per-motion details and one source record. `early/` and `none/` retain the underlying
+traces and receipts; `summary.json` records progress. Use `--termination early` or `none` only when
 you need a single mode. No branch switching is needed.
 
 ## Evaluation

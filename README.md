@@ -1,7 +1,7 @@
 # Motion Challenge
 
 Open, reproducible benchmarks for humanoid motion tracking. One shared evaluator;
-independent model adapters. Starting with **G1 29DoF · LAFAN40**.
+independent model adapters.
 
 ## Install and run
 
@@ -19,7 +19,7 @@ root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
 Full-motion success, completion, joint error, and body-position error with
 **XY+yaw / XY / no alignment**. Frozen physics and protocol; hashes and pose
 traces support independent recomputation. Results, data, and weights stay outside
-Git. Development scores are labelled explicitly.
+Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 [Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
 [Add a benchmark](docs/BENCHMARKS.md) ·

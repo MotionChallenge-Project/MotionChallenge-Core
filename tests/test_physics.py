@@ -43,7 +43,7 @@ class PhysicsTests(unittest.TestCase):
     def test_failure_uses_reference_gravity_z_not_yaw_angle(self):
         import json
         from dataclasses import replace
-        protocol=json.loads((self.root/'suites/lafan/protocol.cpu-development.json').read_text())
+        protocol=json.loads((self.root/'suites/lafan/protocol.mujoco317-v1.json').read_text())
         state=self.world.reset(self.motion())
         reference=self.world.reference(0)
         modified=tuple(replace(b,orientation_xyzw=(0.,0.,1.,0.))
@@ -55,12 +55,12 @@ class PhysicsTests(unittest.TestCase):
         failures,_=tracking_sample(replace(state,bodies=modified),reference,protocol)
         self.assertIn('anchor_gravity_z',failures)
 
-    def test_v1_adds_three_alignment_scores_without_changing_failure_rules(self):
+    def test_both_rollout_modes_share_failures_and_alignment_scores(self):
         import json
         from dataclasses import replace
         folder = self.root/'suites/lafan'
-        old = json.loads((folder/'protocol.cpu-development.json').read_text())
-        new = json.loads((folder/'protocol.cpu-development-v1.json').read_text())
+        old = json.loads((folder/'protocol.mujoco317-v1.json').read_text())
+        new = json.loads((folder/'protocol.mujoco317-no-termination-v1.json').read_text())
         self.assertEqual(old['failure'],new['failure'])
         state = self.world.reset(self.motion())
         state = replace(state,bodies=tuple(replace(b,position_world_m=(
@@ -71,7 +71,7 @@ class PhysicsTests(unittest.TestCase):
         failure1,metrics1 = tracking_sample(state,reference,new)
         self.assertTrue(failure0)
         self.assertEqual(failure0,failure1)
-        self.assertNotIn('mpjpe_xy_aligned_m',metrics0)
+        self.assertEqual(metrics0,metrics1)
         for name in ('mpjpe_world_m','mpjpe_xy_aligned_m','mpjpe_xy_yaw_aligned_m'):
             self.assertAlmostEqual(metrics1[name],.4)
 

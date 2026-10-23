@@ -16,7 +16,7 @@ Nominal evaluation uses no observation noise or randomization and friction 1.
 PD is evaluated and saturated every physics step. Metrics compare post-physics
 state to the reference at the same timestamp. Policy frequency may differ by
 checkpoint; scoring uses a common clock and always checks the final transition.
-A final-transition failure counts as failure. The development protocol uses
+A final-transition failure counts as failure. The protocol uses
 reference-relative torso height, projected-gravity-z and end-effector height
 conditions; intentional floor poses are not rejected by a constant pelvis floor.
 
@@ -28,7 +28,7 @@ explicitly marked and cannot count as full-suite success.
 
 ### Three position alignment modes
 
-The v1 development protocol scores the same 14 body origins and timestamps in
+The protocol scores the same 14 body origins and timestamps in
 all three modes. Values are mean Euclidean distances in metres (multiply by
 1000 to display mm), not component-wise MAE or joint-angle errors.
 
@@ -49,10 +49,8 @@ temporary scoring arrays; it never edits the simulation, policy inputs or refere
 Root XY, root height and absolute yaw-correction errors are also reported.
 `mpjpe_root_relative_world_axes_m` remains a legacy diagnostic: it removes XYZ
 translation, including height, and retains yaw. It is not a synonym for any of
-the three main modes. The original `protocol.cpu-development.json` retains the
-v0 metric set, and existing traces/results must use their original protocol hash.
-The v1 failure conditions are unchanged from v0; metric alignment cannot turn a
-failed rollout into a success. All three scores are produced for every model.
+the three main modes. Metric alignment cannot turn a failed rollout into a success.
+All three scores are produced for every model.
 
 ### Parallel evaluation
 
@@ -64,12 +62,12 @@ Each slot receives a disjoint motion shard and leaves the batch when finished.
 Reference processing and scoring run in independent processes to avoid Python
 thread contention; only PD commands and generalized state cross physics IPC. PD is recomputed every 2 ms, and the exact
 fractional endpoint is retained. Batch does not change author inference clocks,
-physics, failures or scoring. `--backend serial` is available for parity checks.
+physics, failures or scoring.
 
-The new `protocol.mujoco317-v1.json` pins the engine version. Earlier 3.16 results
-retain their original protocol and remain a separate comparison track; scores
-are never silently relabelled. Serial/batch tests compare poses, velocities,
-failure times and metric traces exactly **within the same engine version**.
+The public evaluator supports only MuJoCo 3.17.0 batch. The two bundled
+protocols select early termination or full-motion continuation. Internal
+reference-world tests check batch poses, velocities, failure times and metric
+traces exactly within this engine version.
 
 Progress is emitted as JSON every 5 seconds (`--progress-interval`), immediately
 on clip completion and after download hash verification. Download events include

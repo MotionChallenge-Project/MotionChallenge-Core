@@ -4,7 +4,6 @@ Artifacts and receipts live outside Git. Model repositories provide inference,
 immutable artifact declarations and an optional model-specific export hook.
 """
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import importlib
 import json
@@ -18,7 +17,6 @@ import tempfile
 import urllib.request
 
 from .dataset import audit_dataset, fetch_dataset
-from .merge import merge
 from .resources import lafan_paths
 from .progress import Progress, copy_download
 from .validation import external_output_path, sha256_file
@@ -99,7 +97,7 @@ def main(adapter_root=None):
                    help='Use a cached additional model component; repeat for multi-file policies')
     p.add_argument('--output', type=Path, help='New directory outside any Git repository')
     p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
-    p.add_argument('--backend', choices=['batch', 'serial'], default='batch')
+    p.add_argument('--backend', choices=['batch'], default='batch', help=argparse.SUPPRESS)
     p.add_argument('--termination', choices=['early', 'none'], default='early',
                    help='Stop at first failure, or continue the complete motion while recording failures')
     p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to batch slots')
@@ -148,12 +146,11 @@ def main(adapter_root=None):
                'suite': a.suite, 'started_utc': stamp, 'author_inference_review': 'not_granted_by_runner',
                'output': str(output), 'status': 'running', 'backend': a.backend,
                'termination_mode': 'early_termination' if a.termination == 'early' else 'no_termination',
-               'batch_size': a.jobs if a.backend == 'batch' else 1}
+               'batch_size': a.jobs}
     receipt_path = output/'receipt.json'
     receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
     selected = manifest['files'][:a.max_clips] if a.max_clips else manifest['files']
     count = min(a.jobs, len(selected))
-    shards = [selected] if a.backend == 'batch' else [selected[i::count] for i in range(count)]
     common = ['--controller', str(resolved), '--data', str(a.data)]
     for key, value in paths.items():
         common += ['--'+key, str(value)]
@@ -187,21 +184,17 @@ def main(adapter_root=None):
         return result
 
     try:
-        with ThreadPoolExecutor(max_workers=count) as executor:
-            results = list(executor.map(evaluate, enumerate(shards)))
+        results = [evaluate((0, selected))]
         progress.emit('verification', force=True, status='started')
         partial = a.max_clips is not None or a.max_duration is not None
         if partial:
             checks = [verify(r, paths['suite'], paths['robot'], paths['protocol'], a.data, resolved) for r in results]
             receipt.update(status='verified_smoke', verification=checks, full_suite=False)
-        elif a.backend == 'batch':
+        else:
             # One complete batch record: paths stay relative to the same output
             # directory. Verify once rather than recomputing every trace twice.
             shutil.copyfile(results[0], output/'result.json')
             check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved)
-            receipt.update(status='trace_verified', verification=check, full_suite=True)
-        else:
-            check = merge(results, output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved)
             receipt.update(status='trace_verified', verification=check, full_suite=True)
         after = source_snapshot(root)
         receipt['source_unchanged_during_run'] = before == after

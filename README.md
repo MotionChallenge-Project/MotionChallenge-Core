@@ -23,7 +23,7 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 [Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
 [Add a benchmark](docs/BENCHMARKS.md) ·
-[Website](https://motion-challenge-project.epiccabin1025.chatgpt.site) ·
+[Website](https://motion-challenge-project.github.io/motion-challenge-project) ·
 [Project](https://github.com/motion-challenge-project)
 
 Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).

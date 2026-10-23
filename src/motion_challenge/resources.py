@@ -15,4 +15,4 @@ def resource_root():
 def lafan_paths():
     root=resource_root()
     return {'suite':root/'suites/lafan/dataset.json','robot':root/'robots/g1-29dof-cpu-v0.json',
-            'protocol':root/'suites/lafan/protocol.cpu-development-v1.json'}
+            'protocol':root/'suites/lafan/protocol.mujoco317-v1.json'}

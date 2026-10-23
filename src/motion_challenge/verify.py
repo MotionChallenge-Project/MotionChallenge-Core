@@ -13,6 +13,7 @@ import mujoco
 
 from .dataset import load_csv_motion
 from .physics import World, tracking_sample
+from .progress import Progress
 from .sdk import ReferenceFrame
 from .validation import confined_path, sha256_file
 
@@ -34,6 +35,10 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         if sha256_file(path) != result[key]:
             raise ValueError(f'{key} mismatch')
     protocol = json.loads(Path(protocol_path).read_text())
+    if result.get('mujoco_version') != mujoco.__version__:
+        raise ValueError('verification must use the recorded MuJoCo version')
+    if protocol.get('mujoco_version', mujoco.__version__) != mujoco.__version__:
+        raise ValueError('MuJoCo version differs from protocol')
     manifest = json.loads(Path(suite_path).read_text())
     files = {f['path']:f for f in manifest['files']}
     ids = [c['id'] for c in result['clips']]
@@ -42,8 +47,9 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
     if result['full_suite'] and set(ids) != set(files):
         raise ValueError('full-suite record is missing clips')
     world = World(robot_path)
+    progress = Progress()
     checked_samples = 0
-    for clip in result['clips']:
+    for clip_index, clip in enumerate(result['clips']):
         item = files[clip['id']]
         source = confined_path(data_root, item['path'])
         if sha256_file(source) != item['sha256']:
@@ -78,6 +84,9 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
                 mujoco.mj_forward(world.model,world.data)
                 failure, metrics = tracking_sample(world.state(),world.reference(t),protocol)
                 samples.append(metrics)
+                if len(samples) % 100 == 0:
+                    progress.emit('verification', completed=clip_index, total=len(ids), clip=clip['id'],
+                                  samples=checked_samples+len(samples), time_s=t)
                 if not failure: last_valid = t
                 last_time = t
         if not samples or len(samples) != clip['sample_count']:
@@ -100,6 +109,7 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
             if not math.isclose(actual,recorded,abs_tol=1e-9,rel_tol=1e-7):
                 raise ValueError(f'{k} recomputation mismatch')
         checked_samples += len(samples)
+        progress.emit('verification', force=True, completed=clip_index+1, total=len(ids), samples=checked_samples)
     if sum(c['success'] for c in result['clips']) != result['success_count']:
         raise ValueError('success count mismatch')
     mean_completion=math.fsum(c['completion'] for c in result['clips'])/len(ids)

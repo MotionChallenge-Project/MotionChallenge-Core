@@ -56,6 +56,28 @@ failed rollout into a success. All three scores are produced for every model.
 
 ### Parallel evaluation
 
+The default engine is MuJoCo **3.17.0**, using official `mujoco.batch.Batch`
+with persistent, independent simulation slots. `--jobs` sets the slot count;
+`--threads` sets the CPU physics thread count (defaults to the slot count).
+Each slot owns its controller process, observation history and reference cache.
+Each slot receives a disjoint motion shard and leaves the batch when finished.
+Reference processing and scoring run in independent processes to avoid Python
+thread contention; only PD commands and generalized state cross physics IPC. PD is recomputed every 2 ms, and the exact
+fractional endpoint is retained. Batch does not change author inference clocks,
+physics, failures or scoring. `--backend serial` is available for parity checks.
+
+The new `protocol.mujoco317-v1.json` pins the engine version. Earlier 3.16 results
+retain their original protocol and remain a separate comparison track; scores
+are never silently relabelled. Serial/batch tests compare poses, velocities,
+failure times and metric traces exactly **within the same engine version**.
+
+Progress is emitted as JSON every 5 seconds (`--progress-interval`), immediately
+on clip completion and after download hash verification. Download events include
+bytes, total size when known, rate and ETA. Evaluation events include completed /
+total clips, passed clips and each active motion's simulated time. External
+`*.progress.json` snapshots and JSONL events support dashboards and monitoring.
+
+
 `motion-challenge-eval --clip-id <exact-suite-id>` evaluates selected complete
 motions without changing the suite manifest. Repeat the flag for a shard.
 `uv run python -m motion_challenge.merge --output ... --suite ... --robot ...

@@ -14,7 +14,7 @@ from motion_challenge.validation import confined_path, external_output_path, val
 class ContractTests(unittest.TestCase):
     def test_outputs_reject_repository_and_symlink_into_repository(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             repo = root/'repo'
             repo.mkdir()
             (repo/'.git').mkdir()
@@ -81,7 +81,7 @@ class ContractTests(unittest.TestCase):
 
     def test_artifacts_cannot_escape_cache(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "cache"
+            root = Path(temporary).resolve() / "cache"
             root.mkdir()
             (root/"escape").symlink_to(root.parent, target_is_directory=True)
             for path in ("../outside", "/outside", "escape/outside"):

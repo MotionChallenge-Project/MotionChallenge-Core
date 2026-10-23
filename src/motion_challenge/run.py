@@ -14,6 +14,9 @@ import selectors
 import subprocess
 import sys
 import time
+import threading
+
+from .progress import Progress
 
 from .dataset import load_csv_motion
 from .physics import World, tracking_sample
@@ -68,7 +71,7 @@ class Worker:
         self.log.close()
 
 
-def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, trace=None):
+def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, trace=None, on_step=None):
     state = world.reset(motion)
     offsets = runtime['reference_offsets_s']
     def window(t):
@@ -85,6 +88,8 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
         next_t = min(control_i*period, metric_i*metric_dt, end)
         world.advance(command, next_t)
         state = world.state()
+        if on_step:
+            on_step(float(world.data.time), end)
         if next_t >= metric_i*metric_dt-1e-9 or next_t >= end-1e-9:
             failure, values = tracking_sample(state, world.reference(next_t), protocol)
             samples.append({'time_s': next_t, **values})
@@ -125,8 +130,16 @@ def main():
     p.add_argument('--max-duration', type=float)
     p.add_argument('--max-clips', type=int)
     p.add_argument('--clip-id', action='append', help='Exact suite clip ID for independently verifiable sharding; repeatable')
+    p.add_argument('--backend', choices=['batch', 'serial', 'batch-client'], default='batch')
+    p.add_argument('--batch-address', help=argparse.SUPPRESS)
+    p.add_argument('--batch-slot', type=int, help=argparse.SUPPRESS)
+    p.add_argument('--batch-size', type=int, default=8)
+    p.add_argument('--threads', type=int)
+    p.add_argument('--progress-interval', type=float, default=5.0)
     p.add_argument('--worker-python', help='Python executable in the independently locked adapter environment')
     a = p.parse_args()
+    if a.batch_size < 1 or (a.threads is not None and a.threads < 1) or a.progress_interval <= 0:
+        p.error('batch size, threads and progress interval must be positive')
     a.output = external_output_path(a.output)
     runtime = json.loads(a.controller.read_text())
     period = runtime['control_period_s']
@@ -146,31 +159,76 @@ def main():
         if not set(a.clip_id) <= {f['path'] for f in manifest['files']}:
             raise ValueError('clip ID is not in the frozen suite')
     protocol = json.loads(a.protocol.read_text())
+    engine = __import__('mujoco').__version__
+    if protocol.get('mujoco_version', engine) != engine:
+        raise ValueError('installed MuJoCo does not match the frozen protocol')
     a.output.parent.mkdir(parents=True, exist_ok=True)
-    world = World(a.robot)
     results = {'kind': 'development_evaluation', 'official': False,
         'controller_id': runtime['id'], 'controller_config_sha256': sha256_file(a.controller),
         'suite_sha256': sha256_file(a.suite), 'protocol_sha256': sha256_file(a.protocol),
         'robot_profile_sha256': sha256_file(a.robot), 'mujoco_version': __import__('mujoco').__version__,
-        'isolation': 'separate_process_not_security_sandbox', 'clips': [], 'status': 'running'}
-    worker = None
+        'isolation': 'separate_process_not_security_sandbox', 'clips': [], 'status': 'running',
+        'backend': a.backend, 'batch_size': a.batch_size if a.backend == 'batch' else 1}
+    selected = ([f for f in manifest['files'] if f['path'] in a.clip_id] if a.clip_id
+                else manifest['files'][:a.max_clips] if a.max_clips else manifest['files'])
+    if a.backend == 'batch':
+        from .batch_dispatch import evaluate_batch
+        evaluate_batch(a, selected, results, protocol, len(selected) == len(manifest['files']) and a.max_duration is None)
+        return
+    progress = Progress(a.output.with_suffix('.progress.json'), a.progress_interval)
+    jobs = iter(enumerate(selected))
+    lock = threading.RLock()
+    active = {}
+    order = {clip['path']: i for i, clip in enumerate(selected)}
+    def report(force=False):
+        with lock:
+            progress.emit('evaluation', force=force, completed=len(results['clips']), total=len(selected),
+                          passed=sum(c['success'] for c in results['clips']), active=dict(active),
+                          backend=a.backend)
+    def evaluate_slot(slot, world):
+        worker = Worker(a.controller.resolve(), a.output.with_suffix(f'.worker{slot:02d}.log'),
+                        python_executable=a.worker_python)
+        try:
+            while True:
+                with lock:
+                    item = next(jobs, None)
+                    if item is None:
+                        break
+                    index, clip = item
+                    active[slot] = {'clip': clip['path'], 'time_s': 0.0}
+                    report(True)
+                path = confined_path(a.data, clip['path'])
+                if sha256_file(path) != clip['sha256']:
+                    raise ValueError('dataset integrity mismatch')
+                motion = load_csv_motion(path, manifest['joint_names'], manifest['source_fps'])
+                trace_path = a.output.with_name(a.output.stem+f'.clip{index:03d}.poses.jsonl.gz')
+                def on_step(t, end):
+                    with lock:
+                        active[slot] = {'clip': clip['path'], 'time_s': t, 'duration_s': end}
+                        report()
+                with gzip.open(trace_path, 'wt') as trace:
+                    result = evaluate_clip(world, motion, worker, runtime, protocol, a.max_duration, trace, on_step)
+                result['trace'] = {'path': trace_path.name, 'sha256': sha256_file(trace_path)}
+                with lock:
+                    results['clips'].append({'id': clip['path'], **result})
+                    results['clips'].sort(key=lambda c: order[c['id']])
+                    active.pop(slot, None)
+                    temporary = a.output.with_suffix('.tmp')
+                    temporary.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')
+                    temporary.replace(a.output)
+                    report(True)
+        finally:
+            worker.close()
     try:
-        worker = Worker(a.controller.resolve(), a.output.with_suffix('.worker.log'), python_executable=a.worker_python)
-        selected = ([f for f in manifest['files'] if f['path'] in a.clip_id] if a.clip_id
-                    else manifest['files'][:a.max_clips] if a.max_clips else manifest['files'])
-        for clip in selected:
-            path = confined_path(a.data, clip['path'])
-            if sha256_file(path) != clip['sha256']:
-                raise ValueError('dataset integrity mismatch')
-            motion = load_csv_motion(path, manifest['joint_names'], manifest['source_fps'])
-            trace_path = a.output.with_name(a.output.stem+f'.clip{len(results["clips"]):03d}.poses.jsonl.gz')
-            with gzip.open(trace_path, 'wt') as trace:
-                result = evaluate_clip(world, motion, worker, runtime, protocol, a.max_duration, trace)
-            result['trace'] = {'path':trace_path.name, 'sha256':sha256_file(trace_path)}
-            results['clips'].append({'id': clip['path'], **result})
-            a.output.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')
-            print(json.dumps({'clip': clip['path'], 'success': result['success'],
-                'observed_time_s': result['observed_time_s'], 'failure_reasons': result['failure_reasons']}), flush=True)
+        if a.backend == 'batch-client':
+            from .batch_dispatch import RemoteWorld
+            world = RemoteWorld(a.robot, a.batch_address, a.batch_slot)
+            try:
+                evaluate_slot(0, world)
+            finally:
+                world.close()
+        else:
+            evaluate_slot(0, World(a.robot))
         results['status'] = 'completed'
         results['full_suite'] = len(selected) == len(manifest['files']) and a.max_duration is None
         results['success_count'] = sum(x['success'] for x in results['clips'])
@@ -187,8 +245,6 @@ def main():
         raise
     finally:
         a.output.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')
-        if worker:
-            worker.close()
 
 
 if __name__ == '__main__':

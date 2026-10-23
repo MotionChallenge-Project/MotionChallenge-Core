@@ -13,6 +13,8 @@ uv sync
 
 Use a model repository to run its checkpoint. Each adapter pins this core as the
 root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
+MuJoCo 3.17 CPU batch evaluation is the default (`--jobs 8`); downloads and
+evaluation report progress every 5 seconds.
 
 ## Evaluation
 

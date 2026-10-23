@@ -12,6 +12,18 @@ from .sdk import BodyState, StatePacket
 from .validation import sha256_file
 
 
+def command_values(command, size):
+    values = [np.asarray(getattr(command, n), dtype=np.float64) for n in (
+        'joint_position_target_rad', 'joint_velocity_target_rad_s',
+        'kp_nm_rad', 'kd_nm_s_rad', 'feedforward_torque_nm')]
+    if any(v.shape != (size,) or not np.isfinite(v).all() for v in values):
+        raise ValueError('controller returned invalid PD command')
+    q, qd, kp, kd, ff = values
+    if (kp < 0).any() or (kd < 0).any():
+        raise ValueError('negative gains')
+    return values
+
+
 class World:
     def __init__(self, profile_path):
         path = Path(profile_path)
@@ -106,14 +118,7 @@ class World:
             root.linear_velocity_world_m_s, root.angular_velocity_world_rad_s, bodies)
 
     def advance(self, command, until_s):
-        values = [np.asarray(getattr(command, n), dtype=np.float64) for n in (
-            'joint_position_target_rad', 'joint_velocity_target_rad_s',
-            'kp_nm_rad', 'kd_nm_s_rad', 'feedforward_torque_nm')]
-        if any(v.shape != (len(self.joints),) or not np.isfinite(v).all() for v in values):
-            raise ValueError('controller returned invalid PD command')
-        q, qd, kp, kd, ff = values
-        if (kp < 0).any() or (kd < 0).any():
-            raise ValueError('negative gains')
+        q, qd, kp, kd, ff = command_values(command, len(self.joints))
         dt = self.profile['physics_dt_s']
         try:
             while self.data.time < until_s - 1e-10:

@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/motion-challenge/motion-challenge"
-Issues = "https://github.com/motion-challenge/motion-challenge/issues"
+Repository = "https://github.com/motion-challenge-project/motion-challenge"
+Issues = "https://github.com/motion-challenge-project/motion-challenge/issues"
 
 [project.scripts]
 motion-challenge = "motion_challenge.cli:main"

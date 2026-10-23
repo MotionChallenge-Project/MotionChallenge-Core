@@ -20,7 +20,7 @@ def packet(cls, data):
 
 def main():
     cfg = json.loads(Path(sys.argv[1]).read_text())
-    root = Path(sys.argv[1]).resolve().parent
+    root = Path(cfg.get('adapter_root', Path(sys.argv[1]).resolve().parent)).resolve()
     sys.path.insert(0, str(root))
     for path in cfg.get('python_paths', []):
         sys.path.insert(0, str((root/path).resolve()))

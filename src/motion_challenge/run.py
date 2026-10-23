@@ -25,8 +25,7 @@ class Worker:
     def __init__(self, config_path, logfile, timeout=120, python_executable=None):
         self.log = open(logfile, 'w')
         self.timeout = timeout
-        env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1',
-                   SIM2REAL_ORT_NUM_THREADS='1')
+        env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
         self.process = subprocess.Popen([python_executable or sys.executable, '-m', 'motion_challenge.worker', str(config_path)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log, text=True, bufsize=1, env=env)
         self.selector = selectors.DefaultSelector()

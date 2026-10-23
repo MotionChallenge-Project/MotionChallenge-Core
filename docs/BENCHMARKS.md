@@ -12,7 +12,8 @@ formats are not automatically supported.
 
 ```text
 another-benchmark/
-  pyproject.toml          # motion-challenge pinned by Git commit
+  motion-challenge/       # shared core Git submodule
+  pyproject.toml          # local path dependency on that submodule
   uv.lock
   dataset.json           # immutable source revision, files, hashes, joint names
   protocol.json          # explicit metric clock and supported failure settings

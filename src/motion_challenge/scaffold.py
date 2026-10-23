@@ -1,6 +1,7 @@
 """Create a separate SDK consumer project, with no copied evaluation implementation."""
 import json
 import os
+import subprocess
 from pathlib import Path
 
 
@@ -50,12 +51,16 @@ def create_project(destination,core_path):
     if destination==core_path or core_path in destination.parents:raise ValueError('create the consumer outside the core repository')
     if destination.exists() and any(destination.iterdir()):raise ValueError('destination must be absent or empty')
     destination.mkdir(parents=True,exist_ok=True)
-    dependency=os.path.relpath(core_path,destination)
+    subprocess.run(['git','init','-b','main',str(destination)],check=True,capture_output=True)
+    subprocess.run(['git','-C',str(destination),'-c','protocol.file.allow=always','submodule','add',str(core_path),'motion-challenge'],check=True,capture_output=True)
+    subprocess.run(['git','-C',str(destination),'config','-f','.gitmodules','submodule.motion-challenge.url','https://github.com/motion-challenge-project/motion-challenge.git'],check=True)
+    dependency='motion-challenge'
     (destination/'pyproject.toml').write_text('[project]\nname = "motion-challenge-consumer"\nversion = "0.0.1"\nrequires-python = ">=3.12,<3.13"\ndependencies = ["motion-challenge"]\n\n[tool.uv.sources]\nmotion-challenge = {path = '+json.dumps(dependency)+', editable = true}\n')
     (destination/'.python-version').write_text('3.12\n')
     (destination/'.gitignore').write_text('.venv/\n__pycache__/\n*.pyc\n')
     (destination/'adapter.py').write_text(FIXTURE)
     (destination/'smoke.py').write_text(SMOKE)
+    (destination/'evaluate.py').write_text('from pathlib import Path\nfrom motion_challenge.entrypoint import main\n\nif __name__ == "__main__":\n    main(Path(__file__).parent)\n')
     runtime={'id':'reference-pd-interface-fixture','entrypoint':'adapter:create','control_period_s':.02,
              'reference_offsets_s':[0.],'reference_history_s':0.,'reference_preview_s':0.,'state_access':'privileged-state-v0',
              'action_mode':'joint-pd-feedforward','official':False,'is_trained_checkpoint':False}

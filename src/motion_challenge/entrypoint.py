@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import importlib
 import json
 import os
+import re
 import shutil
 from pathlib import Path
 import subprocess
@@ -68,11 +69,34 @@ def source_snapshot(root):
             'core_dirty': bool(subprocess.check_output(['git', '-C', str(core), 'status', '--porcelain'], text=True).strip())}
 
 
+def resolve_artifacts(runtime, root, overrides=(), offline=False, progress=None):
+    """Resolve additional model components without model-specific runner logic."""
+    declarations = runtime.get('artifacts', {})
+    selected = {}
+    for override in overrides:
+        name, separator, path = override.partition('=')
+        if not separator or not path or name not in declarations or name in selected:
+            raise ValueError('artifact overrides require unique declared NAME=PATH values')
+        selected[name] = Path(path).expanduser().resolve()
+    resolved = {}
+    for name, item in declarations.items():
+        if not re.fullmatch(r'[A-Za-z0-9_-]+', name) or not re.fullmatch(r'[0-9a-f]{64}', item['sha256']):
+            raise ValueError('invalid artifact name or SHA256')
+        local = root/item['path']
+        path = selected.get(name, local if local.is_file() else
+            Path.home()/'.cache/motion-challenge/checkpoints'/item['sha256']/Path(item['path']).name)
+        path = artifact(path, item['sha256'], item.get('url'), offline, progress)
+        resolved[name] = {**item, 'path': str(path.resolve())}
+    return resolved
+
+
 def main(adapter_root=None):
     p = argparse.ArgumentParser(description='Evaluate a checkpoint with the shared benchmark core.')
     p.add_argument('--suite', default='lafan40', choices=['lafan40'])
     p.add_argument('--data', type=Path, default=Path(os.environ.get('MOTION_CHALLENGE_DATA', '~/.cache/motion-challenge/lafan')))
     p.add_argument('--weights', type=Path)
+    p.add_argument('--artifact', action='append', default=[], metavar='NAME=PATH',
+                   help='Use a cached additional model component; repeat for multi-file policies')
     p.add_argument('--output', type=Path, help='New directory outside any Git repository')
     p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
     p.add_argument('--backend', choices=['batch', 'serial'], default='batch')
@@ -113,6 +137,8 @@ def main(adapter_root=None):
             module, function = runtime['prepare_checkpoint'].split(':')
             getattr(importlib.import_module(module), function)(weights)
         runtime['weights'] = str(artifact(weights, runtime['weights_sha256'], runtime.get('weights_url'), a.offline, progress).resolve())
+    if runtime.get('artifacts') or a.artifact:
+        runtime['artifacts'] = resolve_artifacts(runtime, root, a.artifact, a.offline, progress)
     runtime['adapter_root'] = str(root)
     resolved = output/'runtime.json'
     resolved.write_text(json.dumps(runtime, indent=2)+'\n')

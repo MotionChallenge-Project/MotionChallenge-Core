@@ -44,6 +44,17 @@ missing. `--weights`, `--data`, `--output`, `--jobs` and `--offline` override lo
 storage/execution settings. Results, traces and receipts stay outside Git.
 `--max-clips 1 --max-duration 2` is a smoke run and cannot enter a full ranking.
 
+Multi-file policies can add an `artifacts` mapping to `runtime.json`:
+
+```json
+{"artifacts": {"encoder": {"path": "checkpoints/encoder.onnx", "sha256": "64 hex digits", "url": "https://author.example/encoder.onnx"}}}
+```
+
+The core reuses, downloads and verifies each component before starting workers.
+Use `--artifact encoder=/path/to/encoder.onnx` for a local override. The resolved
+paths and hashes are bound into the runtime receipt. Model code reads
+`config["artifacts"]["encoder"]["path"]`; data and evaluation remain in the core.
+
 ## Inference contract
 
 The factory `create(root, config)` returns `reset`, `act`, and `close` methods.

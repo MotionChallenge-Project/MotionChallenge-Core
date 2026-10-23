@@ -1,0 +1,20 @@
+{
+  "id": "lafan-g1-29dof/nominal/cpu-development-v0",
+  "official": false,
+  "metric_period_s": 0.02,
+  "initialization": "raw reference frame zero and canonical finite-difference velocities",
+  "reference_velocity": "centered generalized-position difference at plus/minus one source interval; one-sided at endpoints",
+  "failure": {
+    "anchor_body": "torso_link",
+    "anchor_height_m": 0.25,
+    "gravity_z": 0.8,
+    "end_effector_bodies": ["left_ankle_roll_link", "right_ankle_roll_link", "left_wrist_yaw_link", "right_wrist_yaw_link"],
+    "end_effector_height_m": 0.25,
+    "comparison": "strict greater-than; absolute world-z errors; gravity z is normalized projected gravity, not angle"
+  },
+  "metric_bodies": ["pelvis", "left_hip_yaw_link", "right_hip_yaw_link", "torso_link", "left_knee_link", "right_knee_link", "left_ankle_roll_link", "right_ankle_roll_link", "left_shoulder_yaw_link", "right_shoulder_yaw_link", "left_elbow_link", "right_elbow_link", "left_wrist_yaw_link", "right_wrist_yaw_link"],
+  "nominal": {"noise": false, "randomization": false, "sliding_friction": 1.0},
+  "precision_gate": false,
+  "scoring_time": "post-physics state at same reference timestamp, including exact final source timestamp",
+  "warning": "Development protocol; not interchangeable with native mjlab GPU training results or accepted leaderboard scores. Surviving-prefix errors must be accompanied by coverage."
+}

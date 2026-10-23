@@ -1,0 +1,47 @@
+{
+  "id": "lafan-g1-29dof/nominal/v0-draft",
+  "status": "draft",
+  "robot_profile": "g1-29dof",
+  "dataset_manifest": "dataset.json",
+  "dataset_selection": "all40_no_filter",
+  "nominal": {
+    "observation_noise": false,
+    "domain_randomization": false,
+    "sliding_friction": 1.0
+  },
+  "episode": {
+    "start": "first reference frame; initialize pose and velocity from canonical reference",
+    "end": "final source timestamp, no preview-based truncation",
+    "history_reset": "native fill from first actual measurement; no free warmup",
+    "clip_switching": false,
+    "final_transition_failure_is_failure": true
+  },
+  "reference": {
+    "time_units": "seconds",
+    "joint_and_root_position_interpolation": "linear",
+    "quaternion_interpolation": "shortest-path SLERP xyzw",
+    "tail": "clamp each requested future timestamp independently",
+    "velocity_derivation": "pending versioned implementation",
+    "body_fk": "pending pinned canonical asset"
+  },
+  "timing": {
+    "scoring_state": "post-physics state against reference at same timestamp",
+    "policy_frequency": "native, declared per checkpoint; schedule on common physics clock",
+    "metric_frequency": "common across policies; pending runner validation",
+    "simulator": "MuJoCo CPU reference backend proposed; version and physics timestep not locked"
+  },
+  "success": {
+    "definition": "complete entire clip without a frozen protocol failure condition",
+    "extra_precision_gate": false,
+    "failure_family": "reference-relative anchor height/orientation and end-effector height",
+    "exact_formulas_bodies_thresholds": "pending frozen specification and parity tests"
+  },
+  "official_evaluation_ready": false,
+  "blockers": [
+    "pin robot assets, motor/contact model and MuJoCo version",
+    "implement canonical FK and reference velocities",
+    "freeze failure formulas, thresholds and body sets",
+    "implement isolated runner and adapter parity tests",
+    "complete full-clip end-to-end validation"
+  ]
+}

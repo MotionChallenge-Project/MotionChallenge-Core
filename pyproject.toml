@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "motion-challenge"
+version = "0.0.2.dev0"
+description = "Auditable motion-controller benchmark contracts and suites"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "robots/LICENSE.mjlab"]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy==2.5.1",
+  "scipy==1.16.2",
+  "mujoco==3.16.0",
+  "onnxruntime==1.30.0",
+  "PyYAML==6.0.3",
+]
+
+[project.urls]
+Repository = "https://github.com/motion-challenge/motion-challenge"
+Issues = "https://github.com/motion-challenge/motion-challenge/issues"
+
+[project.scripts]
+motion-challenge = "motion_challenge.cli:main"
+motion-challenge-eval = "motion_challenge.run:main"
+motion-challenge-merge = "motion_challenge.merge:main"
+motion-challenge-verify = "motion_challenge.verify:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/motion-challenge/suites/lafan" = ["suites/lafan/*.json"]
+"share/motion-challenge/robots" = ["robots/*.json", "robots/*.xml", "robots/LICENSE*"]

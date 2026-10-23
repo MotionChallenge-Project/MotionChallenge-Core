@@ -13,12 +13,13 @@ uv sync
 
 Use a model repository to run its checkpoint. Each adapter pins this core as the
 root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
-One command runs both early-termination and full-motion evaluation with MuJoCo
-3.17 CPU batch (`--jobs 8`). Downloads and evaluation report progress every five
-seconds. A unified `result.json` contains success, completion, all six body-error views,
-per-motion details and one source record. `early/` and `none/` retain the underlying
-traces and receipts; `summary.json` records progress. Use `--termination early` or `none` only when
-you need a single mode. No branch switching is needed.
+One command runs each complete motion once with MuJoCo 3.17 CPU batch
+(`--jobs 8`). It records the first failure, continues to the final frame, and
+computes both time ranges from the same verified trajectory. A unified
+`result.json` contains success, completion, all six body-error views and one
+source record. `rollout/` retains pose traces and verification evidence;
+`summary.json` records progress. Downloads and evaluation report every five
+seconds. `--termination early` and `--termination none` remain diagnostic options.
 
 ## Evaluation
 

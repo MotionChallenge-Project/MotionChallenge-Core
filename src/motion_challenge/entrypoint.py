@@ -14,6 +14,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 
 from .dataset import audit_dataset, fetch_dataset
@@ -147,9 +148,9 @@ def main(adapter_root=None):
 
 
 def run_pair(root, args, runtime, output, source, stamp):
-    """Keep independently verifiable mode records and a compact combined index."""
+    """Roll out once; verification computes both metric scopes from that trace."""
     record = {'schema': 'motion-challenge/paired-evaluation-v1', 'status': 'running',
-              'started_utc': stamp, 'source': source,
+              'execution': 'single_full_rollout', 'started_utc': stamp, 'source': source,
               'checkpoint_sha256': runtime.get('weights_sha256'), 'modes': {}}
     summary_path = output/'summary.json'
     def save():
@@ -157,55 +158,39 @@ def run_pair(root, args, runtime, output, source, stamp):
         temporary.write_text(json.dumps(record, indent=2)+'\n')
         temporary.replace(summary_path)
     save()
-    errors = []
-    for mode in ('early', 'none'):
-        destination = output/mode
-        destination.mkdir()
-        print(json.dumps({'phase': 'rollout_mode', 'mode': mode, 'output': str(destination)}), flush=True)
-        try:
-            receipt = run_mode(root, args, runtime, destination, mode, source, stamp)
-        except Exception as error:
-            # Preserve completed evidence and still attempt the other rollout.
-            errors.append((mode, error))
-            receipt = {'status': 'error', 'error': f'{type(error).__name__}: {error}'}
-        item = {'status': receipt['status'], 'receipt': f'{mode}/receipt.json'}
-        if 'error' in receipt:
-            item['error'] = receipt['error']
-        result_path = destination/'result.json'
+    destination = output/'rollout'
+    destination.mkdir()
+    try:
+        receipt = run_mode(root, args, runtime, destination, 'none', source, stamp, derive_prefix=True)
+        record['status'] = receipt['status']
+        full_path = destination/'result.json'
+        prefix_path = destination/'prefix-result.json'
+        for mode, path in [('early', prefix_path), ('none', full_path)]:
+            result = json.loads(path.read_text())
+            record['modes'][mode] = {'status': receipt['status'], 'receipt': 'rollout/receipt.json',
+                                     'result': 'rollout/'+path.name,
+                                     'success_count': result['success_count'], 'macro_completion': result['macro_completion'],
+                                     'metrics': result['macro_metrics_over_observed_prefix']}
         if receipt['status'] == 'trace_verified':
-            result = json.loads(result_path.read_text())
-            item.update(result=f'{mode}/result.json', success_count=result['success_count'],
-                        macro_completion=result['macro_completion'],
-                        metrics=result['macro_metrics_over_observed_prefix'],
-                        metric_scope=result.get('metric_scope', 'observed_prefix'))
-        record['modes'][mode] = item
-        save()
-    record['finished_utc'] = datetime.now(timezone.utc).isoformat()
-    statuses = {v['status'] for v in record['modes'].values()}
-    record['status'] = ('trace_verified' if statuses == {'trace_verified'} else
-                        'verified_smoke' if statuses == {'verified_smoke'} else 'error')
-    if record['status'] == 'trace_verified':
-        try:
-            results = [json.loads((output/mode/'result.json').read_text()) for mode in ('early', 'none')]
-            combined = combine(*results, source, runtime['weights_sha256'])
+            combined = combine(json.loads(prefix_path.read_text()), json.loads(full_path.read_text()), source, runtime['weights_sha256'])
+            combined['execution'] = 'single_full_rollout'
             combined['components'] = {mode: {
-                'result': f'{mode}/result.json', 'result_sha256': sha256_file(output/mode/'result.json'),
-                'receipt': f'{mode}/receipt.json', 'receipt_sha256': sha256_file(output/mode/'receipt.json')
-            } for mode in ('early', 'none')}
+                'result': item['result'], 'result_sha256': sha256_file(output/item['result']),
+                'receipt': item['receipt'], 'receipt_sha256': sha256_file(output/item['receipt'])
+            } for mode, item in record['modes'].items()}
             (output/'result.json').write_text(json.dumps(combined, indent=2)+'\n')
             record['result'] = 'result.json'
-        except Exception as error:
-            record.update(status='error', error=f'{type(error).__name__}: {error}')
-            save()
-            raise
-    save()
+    except Exception as error:
+        record.update(status='error', error=f'{type(error).__name__}: {error}')
+        raise
+    finally:
+        record['finished_utc'] = datetime.now(timezone.utc).isoformat()
+        save()
     print(json.dumps({'status': record['status'], 'summary': str(summary_path)}), flush=True)
-    if errors:
-        raise RuntimeError('Rollout failed: ' + ', '.join(mode for mode, _ in errors)) from errors[0][1]
     return record
 
 
-def run_mode(root, a, runtime, output, mode, before, stamp):
+def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False):
     paths = lafan_paths(mode)
     manifest = json.loads(paths['suite'].read_text())
     progress = Progress(output/'progress.json', a.progress_interval)
@@ -253,19 +238,21 @@ def run_mode(root, a, runtime, output, mode, before, stamp):
         print(f'Finished shard {index+1}/{count}', flush=True)
         return result
 
+    run_started = time.monotonic()
     try:
         results = [evaluate((0, selected))]
+        rollout_finished = time.monotonic()
         progress.emit('verification', force=True, status='started')
         partial = a.max_clips is not None or a.max_duration is not None
-        if partial:
-            checks = [verify(r, paths['suite'], paths['robot'], paths['protocol'], a.data, resolved) for r in results]
-            receipt.update(status='verified_smoke', verification=checks, full_suite=False)
-        else:
-            # One complete batch record: paths stay relative to the same output
-            # directory. Verify once rather than recomputing every trace twice.
-            shutil.copyfile(results[0], output/'result.json')
-            check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved)
-            receipt.update(status='trace_verified', verification=check, full_suite=True)
+        # Both complete and smoke records use the same verified path.
+        shutil.copyfile(results[0], output/'result.json')
+        options = ({'prefix_result_path': output/'prefix-result.json',
+                    'prefix_protocol_path': lafan_paths('early')['protocol']} if derive_prefix else {})
+        check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, **options)
+        verification_finished = time.monotonic()
+        receipt['timings_s'] = {'rollout': rollout_finished-run_started,
+                               'verification': verification_finished-rollout_finished}
+        receipt.update(status='verified_smoke' if partial else 'trace_verified', verification=check, full_suite=not partial)
         after = source_snapshot(root)
         receipt['source_unchanged_during_run'] = before == after
         if before != after:
@@ -274,6 +261,7 @@ def run_mode(root, a, runtime, output, mode, before, stamp):
         receipt.update(status='error', error=f'{type(error).__name__}: {error}')
         raise
     finally:
+        receipt.setdefault('timings_s', {})['total'] = time.monotonic()-run_started
         receipt['finished_utc'] = datetime.now(timezone.utc).isoformat()
         receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
     progress.emit('complete', force=True, status=receipt['status'], receipt=str(receipt_path))

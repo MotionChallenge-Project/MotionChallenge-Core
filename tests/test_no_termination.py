@@ -73,6 +73,21 @@ class NoTerminationTests(unittest.TestCase):
                 protocol_sha256=sha256_file(config),controller_config_sha256=sha256_file(controller))
             output = root/'result.json';output.write_text(json.dumps(result))
             self.assertTrue(verify(output,suite,PROFILE,config,root,controller)['full_suite'])
+            prefix_config = root/'prefix-protocol.json'
+            prefix_config.write_text(json.dumps({**protocol,'terminate_on_failure':True}))
+            prefix_output = root/'prefix-result.json'
+            check = verify(output,suite,PROFILE,config,root,controller,prefix_output,prefix_config)
+            derived = json.loads(prefix_output.read_text())['clips'][0]
+            self.assertEqual(derived['sample_count'],early['sample_count'])
+            self.assertEqual(derived['failure_time_s'],early['failure_time_s'])
+            for k,v in early['metric_means_over_observed_prefix'].items():
+                self.assertAlmostEqual(derived['metric_means_over_observed_prefix'][k],v,places=12)
+            self.assertEqual(check['derived_prefix']['samples'],early['sample_count'])
+            self.assertEqual(verify(prefix_output,suite,PROFILE,prefix_config,root,controller)['samples'],early['sample_count'])
+            mismatched = {**protocol,'terminate_on_failure':True,'metric_period_s':.01}
+            prefix_config.write_text(json.dumps(mismatched))
+            with self.assertRaisesRegex(ValueError,'different physical or scoring'):
+                verify(output,suite,PROFILE,config,root,controller,prefix_output,prefix_config)
             for changed in ('failure_time','truncated_trace'):
                 bad=copy.deepcopy(result)
                 if changed=='failure_time':bad['clips'][0]['failure_time_s']=motion.duration_s

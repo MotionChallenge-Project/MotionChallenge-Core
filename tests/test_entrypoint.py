@@ -54,41 +54,38 @@ class ArtifactTests(unittest.TestCase):
 
 
 class PairedRunTests(unittest.TestCase):
-    def test_pair_keeps_separate_scores_and_runs_both_modes(self):
+    def test_one_rollout_yields_both_metric_scopes(self):
         with tempfile.TemporaryDirectory() as directory:
             output=Path(directory)
-            def mode(root,args,runtime,dest,name,source,stamp):
+            def mode(root,args,runtime,dest,name,source,stamp,derive_prefix=False):
+                self.assertEqual(name,'none')
+                self.assertTrue(derive_prefix)
                 self.assertEqual(runtime['weights_sha256'],'fixed')
-                clip={'id':'motion','success':False,'duration_s':2.,'completion':.5,'failure_time_s':1.,'failure_reasons':['height'], 'sample_count':50 if name=='early' else 100,'metric_means_over_observed_prefix':{'error':1 if name=='early' else 10}}
-                (dest/'result.json').write_text(json.dumps({'controller_id':'test','controller_config_sha256':'same','suite_sha256':'same','robot_profile_sha256':'same','mujoco_version':'3.17.0','backend':'batch','clips':[clip],'success_count':0,'macro_completion':.5,
-                    'macro_metrics_over_observed_prefix':clip['metric_means_over_observed_prefix']}))
+                for scope, filename in [('early','prefix-result.json'), ('none','result.json')]:
+                    clip={'id':'motion','success':False,'duration_s':2.,'completion':.5,'failure_time_s':1.,'failure_reasons':['height'], 'sample_count':50 if scope=='early' else 100,'metric_means_over_observed_prefix':{'error':1 if scope=='early' else 10}}
+                    (dest/filename).write_text(json.dumps({'controller_id':'test','controller_config_sha256':'same','suite_sha256':'same','robot_profile_sha256':'same','mujoco_version':'3.17.0','backend':'batch','clips':[clip],'success_count':0,'macro_completion':.5,
+                        'macro_metrics_over_observed_prefix':clip['metric_means_over_observed_prefix']}))
                 (dest/'receipt.json').write_text(json.dumps({'status':'trace_verified'}))
                 return {'status':'trace_verified'}
             with patch('motion_challenge.entrypoint.run_mode',side_effect=mode) as run:
                 result=run_pair(output,SimpleNamespace(),{'weights_sha256':'fixed'},output,{},'start')
-            self.assertEqual(run.call_count,2)
+            self.assertEqual(run.call_count,1)
             self.assertEqual(result['status'],'trace_verified')
             self.assertEqual(result['modes']['early']['metrics']['error'],1)
             self.assertEqual(result['modes']['none']['metrics']['error'],10)
-            self.assertEqual(result['modes']['none']['result'],'none/result.json')
+            self.assertEqual(result['modes']['none']['result'],'rollout/result.json')
             unified=json.loads((output/'result.json').read_text())
             self.assertEqual(unified['total'],1)
             self.assertEqual(unified['success_count'],0)
             self.assertEqual(unified['metrics']['full_motion']['error'],10)
             self.assertEqual(unified['metrics']['until_first_failure']['error'],1)
 
-    def test_failure_preserves_other_mode_and_does_not_publish_failed_metrics(self):
+    def test_failed_trace_does_not_publish_a_unified_result(self):
         with tempfile.TemporaryDirectory() as directory:
             output=Path(directory)
-            def mode(root,args,runtime,dest,name,source,stamp):
-                (dest/'result.json').write_text(json.dumps({'success_count':1,'macro_completion':1,
-                    'macro_metrics_over_observed_prefix':{}}))
-                if name=='early':raise ValueError('failed verification')
-                return {'status':'trace_verified'}
-            with patch('motion_challenge.entrypoint.run_mode',side_effect=mode):
-                with self.assertRaisesRegex(RuntimeError,'early'):
+            with patch('motion_challenge.entrypoint.run_mode',side_effect=ValueError('failed verification')):
+                with self.assertRaisesRegex(ValueError,'failed verification'):
                     run_pair(output,SimpleNamespace(),{},output,{},'start')
             summary=json.loads((output/'summary.json').read_text())
             self.assertEqual(summary['status'],'error')
-            self.assertNotIn('metrics',summary['modes']['early'])
-            self.assertEqual(summary['modes']['none']['status'],'trace_verified')
+            self.assertFalse((output/'result.json').exists())

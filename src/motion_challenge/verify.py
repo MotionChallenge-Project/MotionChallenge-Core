@@ -4,6 +4,7 @@ Trace consistency is not a signature, sandbox attestation or proof of physical
 execution. Official acceptance requires an independent rerun as well.
 """
 import argparse
+import copy
 import gzip
 import json
 import math
@@ -25,7 +26,8 @@ def failure_time_matches(recorded, metric_time, failed):
             and math.isclose(recorded, metric_time, rel_tol=0.0, abs_tol=1e-8))
 
 
-def verify(result_path, suite_path, robot_path, protocol_path, data_root, controller_path):
+def verify(result_path, suite_path, robot_path, protocol_path, data_root, controller_path,
+           prefix_result_path=None, prefix_protocol_path=None):
     result_path = Path(result_path)
     result = json.loads(result_path.read_text())
     if result.get('status') != 'completed':
@@ -45,6 +47,27 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         raise ValueError('verification must use the recorded MuJoCo version')
     if protocol.get('mujoco_version', mujoco.__version__) != mujoco.__version__:
         raise ValueError('MuJoCo version differs from protocol')
+    prefix = None
+    if prefix_result_path is not None:
+        if terminate_on_failure or prefix_protocol_path is None:
+            raise ValueError('prefix derivation requires a full-motion trace and prefix protocol')
+        prefix_result_path = Path(prefix_result_path)
+        if prefix_result_path.parent.resolve() != result_path.parent.resolve() or prefix_result_path == result_path:
+            raise ValueError('derived prefix must be a separate record beside the full trace')
+        prefix_protocol = json.loads(Path(prefix_protocol_path).read_text())
+        def physical_rules(spec):
+            spec = copy.deepcopy(spec)
+            for name in ('id', 'warning', 'terminate_on_failure'):
+                spec.pop(name, None)
+            spec.get('position_alignment_definition', {}).pop('aggregation', None)
+            return spec
+        if not prefix_protocol.get('terminate_on_failure', True) or physical_rules(protocol) != physical_rules(prefix_protocol):
+            raise ValueError('prefix and full-motion protocols have different physical or scoring rules')
+        prefix = {**result, 'protocol_id': prefix_protocol['id'],
+                  'protocol_sha256': sha256_file(prefix_protocol_path), 'termination_mode': 'early_termination',
+                  'metric_scope': 'observed_prefix', 'clips': [],
+                  'derivation': {'method': 'first-failure prefix of one verified full rollout',
+                                 'full_result_sha256': sha256_file(result_path)}}
     manifest = json.loads(Path(suite_path).read_text())
     files = {f['path']:f for f in manifest['files']}
     ids = [c['id'] for c in result['clips']]
@@ -67,8 +90,14 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
             raise ValueError('pose trace hash mismatch')
         samples, last_valid, failure, last_time = [], 0.0, [], 0.0
         first_failure_time = None
+        prefix_count = None
+        limit = clip['trace'].get('sample_limit')
+        if limit is not None and (not terminate_on_failure or type(limit) is not int or limit < 1):
+            raise ValueError('invalid trace prefix sample limit')
         with gzip.open(trace, 'rt') as stream:
             for line in stream:
+                if limit is not None and len(samples) >= limit:
+                    break
                 if len(line) > 100000 or (failure and terminate_on_failure):
                     raise ValueError('invalid pose trace or continued after failure')
                 p = json.loads(line)
@@ -93,6 +122,7 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
                 if current_failure and first_failure_time is None:
                     failure = current_failure
                     first_failure_time = t
+                    prefix_count = len(samples)+1
                 samples.append(metrics)
                 if len(samples) % 100 == 0:
                     progress.emit('verification', completed=clip_index, total=len(ids), clip=clip['id'],
@@ -120,6 +150,17 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
             actual = math.fsum(s[k] for s in samples)/len(samples)
             if not math.isclose(actual,recorded,abs_tol=1e-9,rel_tol=1e-7):
                 raise ValueError(f'{k} recomputation mismatch')
+        if prefix is not None:
+            count = prefix_count or len(samples)
+            terminal_time = first_failure_time if failure else last_time
+            item = {**clip, 'sample_count': count,
+                    'observed_time_s': clip['failure_time_s'] if failure else clip['observed_time_s'],
+                    'metric_means_over_observed_prefix': {
+                        k: math.fsum(s[k] for s in samples[:count])/count for k in samples[0]},
+                    'last_sample': {'time_s': terminal_time, **samples[count-1]},
+                    'trace': {**clip['trace'], 'sample_limit': count}}
+            item.pop('wall_time_s', None)  # No second physical rollout took place.
+            prefix['clips'].append(item)
         checked_samples += len(samples)
         progress.emit('verification', force=True, completed=clip_index+1, total=len(ids), samples=checked_samples)
     if sum(c['success'] for c in result['clips']) != result['success_count']:
@@ -137,9 +178,18 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
                              for c in result['clips'])/len(ids)
             if not math.isclose(mean,recorded[key],abs_tol=1e-9,rel_tol=1e-7):
                 raise ValueError(f'{key} aggregate recomputation mismatch')
-    return {'verification':'trace_consistent','official':False,'clips':len(ids),
+    check = {'verification':'trace_consistent','official':False,'clips':len(ids),
             'samples':checked_samples,'full_suite':result['full_suite'],
             'scope':'hashes, canonical FK, timing, failure rules and metrics; not execution attestation'}
+    if prefix is not None:
+        prefix['macro_metrics_over_observed_prefix'] = {
+            k: math.fsum(c['metric_means_over_observed_prefix'][k] for c in prefix['clips'])/len(ids)
+            for k in prefix['clips'][0]['metric_means_over_observed_prefix']}
+        prefix_result_path.write_text(json.dumps(prefix, indent=2, allow_nan=False)+'\n')
+        check['derived_prefix'] = {'result': prefix_result_path.name,
+                                   'result_sha256': sha256_file(prefix_result_path),
+                                   'samples': sum(c['sample_count'] for c in prefix['clips'])}
+    return check
 
 
 def main():

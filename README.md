@@ -1,4 +1,4 @@
-# Motion Challenge
+# MotionChallenge Core
 
 Open, reproducible benchmarks for humanoid motion tracking. One shared evaluator;
 independent model adapters.
@@ -6,8 +6,8 @@ independent model adapters.
 ## Install and run
 
 ```bash
-git clone https://github.com/motion-challenge-project/motion-challenge.git
-cd motion-challenge
+git clone https://github.com/MotionChallenge-Project/MotionChallenge-Core.git
+cd MotionChallenge-Core
 uv sync
 ```
 
@@ -31,7 +31,7 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 [Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
 [Add a benchmark](docs/BENCHMARKS.md) ·
-[Website](https://motion-challenge-project.github.io/motion-challenge-project) ·
-[Project](https://github.com/motion-challenge-project)
+[Website](https://motionchallenge.github.io/motion-challenge-project/) ·
+[Project](https://github.com/MotionChallenge-Project)
 
 Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).

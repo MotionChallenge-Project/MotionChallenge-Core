@@ -41,8 +41,8 @@ without such evidence does not establish admission.
 
 Admission requires source review, forbidden-input dependency tests, comparison
 of observation tensors and motor targets with the supported author inference
-path, and new complete independently verified evaluations. An unverified path
-remains pending; a checkpoint requiring forbidden information is not admitted, without a claim about its intrinsic capability.
+path, and complete independently verified evaluations. Controllers must satisfy
+this contract throughout initialization and inference.
 
 Core removes prohibited fields before sending reset/act packets to either
 single-controller or batched inference calls. `ProprioceptiveStatePacket` is

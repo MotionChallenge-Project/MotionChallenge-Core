@@ -1,8 +1,4 @@
-"""Development evaluator. Core owns data, clocks, physics, failures and metrics.
-
-Outputs are unverified development records until source provenance,
-upstream inference parity and the complete protocol are independently reviewed.
-"""
+"""Motion evaluator. Core owns data, clocks, physics, failures and metrics."""
 import argparse
 import json
 import math
@@ -130,7 +126,7 @@ def main():
     if protocol.get('mujoco_version', engine) != engine:
         raise ValueError('installed MuJoCo does not match the frozen protocol')
     a.output.parent.mkdir(parents=True, exist_ok=True)
-    results = {'kind': 'development_evaluation', 'official': False,
+    results = {'kind': 'motion_tracking_evaluation',
         'protocol_id': protocol['id'],
         'state_access': access,
         'termination_mode': 'early_termination' if protocol.get('terminate_on_failure', True) else 'no_termination',

@@ -53,7 +53,7 @@ def main():
             manifest = read(args.manifest)
             result = {"id": manifest["id"], "robot": manifest["robot_profile"],
                       "expected_clips": manifest["expected_clips"],
-                      "status": "dataset audit available; official evaluation not implemented"}
+                      "status": "suite_loaded"}
     except (ValueError, KeyError, TypeError, OSError) as exc:
         parser.exit(2, f"validation failed: {exc}\n")
     rendered = json.dumps(result, indent=2, allow_nan=False) + "\n"

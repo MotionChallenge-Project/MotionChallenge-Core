@@ -213,7 +213,7 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
                              for c in result['clips'])/len(ids)
             if not math.isclose(mean,recorded[key],abs_tol=1e-9,rel_tol=1e-7):
                 raise ValueError(f'{key} aggregate recomputation mismatch')
-    check = {'verification':'trace_consistent','official':False,'clips':len(ids),
+    check = {'verification':'trace_consistent','clips':len(ids),
             'samples':checked_samples,'full_suite':result['full_suite'],
             'scope':'hashes, canonical FK, timing, failure rules and metrics; not execution attestation'}
     if prefix is not None:

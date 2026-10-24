@@ -100,7 +100,7 @@ Result verification is also in the core: `uv run motionchallenge-verify` takes
 the result, suite, robot, protocol, dataset cache and controller configuration.
 It validates hashes and independently recomputes FK, failures and metrics from
 the compressed pose trace stored beside the external result. This checks
-consistency; an official service must still rerun the controller.
+consistency; leaderboard publication also requires a controlled rerun.
 
 
 ## One evaluation result

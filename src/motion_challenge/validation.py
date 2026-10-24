@@ -1,4 +1,4 @@
-"""Cheap declarative checks; official execution also requires runtime auditing."""
+"""Validate controller declarations, artifact identities and output paths."""
 
 import hashlib
 import math
@@ -88,7 +88,7 @@ def validate_controller(manifest, joint_names):
     if not {"weights", "inference-config"} <= {x["role"] for x in manifest["artifacts"]}:
         raise ValueError("both weights and inference-config artifacts are required")
     return {"declarative_validation": "passed", "execution_verified": False,
-            "max_preview_s": max(offsets), "official_submission_ready": False}
+            "max_preview_s": max(offsets)}
 
 
 def verify_artifacts(manifest, root):

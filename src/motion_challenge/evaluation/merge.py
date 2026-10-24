@@ -62,7 +62,7 @@ def merge(paths, output, suite, robot, protocol, data, controller):
             else:shutil.copyfile(source,target)
         clip['trace']['path'] = target.name
         result['clips'].append(clip)
-    result['status'],result['full_suite'],result['official'] = 'completed',True,False
+    result['status'],result['full_suite'] = 'completed',True
     result['success_count'] = sum(c['success'] for c in ordered)
     result['macro_completion'] = math.fsum(c['completion'] for c in ordered)/len(ordered)
     if 'macro_metrics_over_observed_prefix' in records[0]:

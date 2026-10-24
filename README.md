@@ -26,10 +26,10 @@ seconds. `--termination early` and `--termination none` remain diagnostic option
 
 | Model | Repository |
 | :-- | :-- |
-| GRIT | [MotionChallenge-grit](https://github.com/MotionChallenge-Project/MotionChallenge-grit) |
-| SONIC v1.1 | [MotionChallenge-sonic-v1-1](https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1) |
-| HoloMotion v1.4.1 | [MotionChallenge-holomotion-v1-4-1](https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1) |
-| PMT Flat | [MotionChallenge-pmt-flat](https://github.com/MotionChallenge-Project/MotionChallenge-pmt-flat) |
+| GRIT | [Evaluation repository](https://github.com/MotionChallenge-Project/motion-challenge-grit) |
+| SONIC v1.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/motion-challenge-sonic-v1-1) |
+| HoloMotion v1.4.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/motion-challenge-holomotion-v1-4-1) |
+| PMT Flat | [Evaluation repository](https://github.com/MotionChallenge-Project/motion-challenge-pmt-flat) |
 
 Clone an adapter with `--recurse-submodules`, then run `uv sync` and
 `uv run evaluate.py`.

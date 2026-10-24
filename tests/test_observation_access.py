@@ -8,7 +8,7 @@ import numpy as np
 
 from motion_challenge.adapters.kinematics import KinematicStateView
 from motion_challenge.resources import lafan_paths
-from motion_challenge.runtime.policy import ArrayInputs
+from motion_challenge.runtime.policy import array_slice
 from motion_challenge.runtime.observations import PROPRIOCEPTIVE, controller_state, validate_access
 from motion_challenge.sdk import StatePacket, ProprioceptiveStatePacket
 from motion_challenge.simulation.physics import World, forward_kinematics
@@ -31,11 +31,14 @@ class ObservationAccessTests(unittest.TestCase):
         from motion_challenge.sdk import ReferenceFrame
         ref=ReferenceFrame(0.,0.,a.joint_position_rad,(0.,0.,0.),a.root_orientation_xyzw,
                            a.joint_velocity_rad_s,a.root_linear_velocity_world_m_s,a.root_angular_velocity_world_rad_s)
-        buffer=ArrayInputs(dict(capacity=1,slots=1,frames=1,joints=a.joint_names,bodies=[]))
-        buffer.put(0,a,(ref,)); inputs,_=buffer.get_arrays(1)
+        from motion_challenge.sdk import StateBatch
+        inputs=StateBatch(a.joint_names,np.array([a.time_s]),*[np.array([getattr(a,k)]) for k in
+            ('joint_position_rad','joint_velocity_rad_s','root_orientation_xyzw',
+             'root_linear_velocity_world_m_s','root_angular_velocity_world_rad_s')])
+        inputs=array_slice(inputs,slice(None))
         np.testing.assert_array_equal(inputs.joint_position_rad[0],a.joint_position_rad)
         self.assertFalse(hasattr(inputs,'root_position_world_m'))
-        with self.assertRaises(ValueError):buffer.put(0,state,(ref,))
+        with self.assertRaises(ValueError):array_slice(state,slice(None))
 
     def test_unknown_schema_and_access_mismatch_fail_closed(self):
         with self.assertRaises(ValueError): validate_access({'state_access':PROPRIOCEPTIVE},{})

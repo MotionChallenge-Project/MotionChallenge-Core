@@ -3,6 +3,7 @@ from contextlib import chdir
 from pathlib import Path
 import tempfile
 import unittest
+from dataclasses import astuple
 import mujoco
 import numpy as np
 from motion_challenge.simulation.vector_physics import VectorPhysics
@@ -26,4 +27,4 @@ class NumericalResetTests(unittest.TestCase):
         pool.time[0]=.1;pool.qvel[0,0]=1e20
         with tempfile.TemporaryDirectory() as folder, chdir(folder):
             with self.assertRaisesRegex(FloatingPointError,'reset or discontinuous'):
-                pool.advance([0],[ZERO],[.12])
+                pool.advance([0],[astuple(ZERO)],[.12])

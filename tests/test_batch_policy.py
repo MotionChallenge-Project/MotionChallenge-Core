@@ -9,6 +9,10 @@ import sys
 import tempfile
 import unittest
 
+import numpy as np
+from motion_challenge.data.bodies import BodyArray
+from motion_challenge.sdk import ProprioceptiveStatePacket, ReferenceFrame
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -70,11 +74,15 @@ def create_batch(root, config): return Batched(config)
                     '--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
                     '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json')]
             previous = None
-            for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5),('arrays',5,3)]:
+            for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5),('arrays',5,3),('no_bodies',5,3),('body_subset',5,3)]:
                 if limit is not None:
                     runtime.update(batch_entrypoint='adapter:create_batch',inference_batch_size=limit)
                 if name == 'arrays':
                     runtime['array_batch_entrypoint']='adapter:create_array'
+                if name == 'no_bodies':
+                    runtime['reference_bodies']=[]
+                if name == 'body_subset':
+                    runtime['reference_bodies']=['torso_link','pelvis']
                 cfg.write_text(json.dumps(runtime))
                 output = root/(name+'.json')
                 result = subprocess.run(base+['--batch-size',str(jobs),'--output',str(output)],env=env,
@@ -83,7 +91,7 @@ def create_batch(root, config): return Batched(config)
                 current = json.loads(output.read_text())
                 transport = current['adapter_transport']
                 self.assertEqual(transport['mechanism'],'in_process_direct_call')
-                self.assertEqual(transport['input_buffer_bytes']>0,name=='arrays')
+                self.assertEqual(transport['input_buffer_bytes']>0,name in ('arrays','no_bodies','body_subset'))
                 for phase in transport['phases'].values():
                     self.assertGreater(phase['requests'],0)
                     self.assertEqual(phase['ipc_s'],0.)

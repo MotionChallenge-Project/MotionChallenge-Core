@@ -1,6 +1,5 @@
 """Canonical CPU MuJoCo backend. No controller or dataset names belong here."""
 from collections import OrderedDict
-from dataclasses import replace
 import json
 from pathlib import Path
 import time
@@ -9,7 +8,7 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from motion_challenge.sdk import StatePacket
+from motion_challenge.sdk import StatePacket, ReferenceFrame
 from motion_challenge.data.bodies import BodyArray
 from motion_challenge.validation import sha256_file
 
@@ -62,6 +61,9 @@ class World:
         self.body_roots = self.model.body_rootid[self.body_indices].copy()
         self.root_body_id = self.model.body(self.profile['root_body']).id
         self.root_body_row = self.body_ids.index(self.root_body_id)
+        self.body_velocities = True
+        self._jp = np.empty((3, self.model.nv))
+        self._jr = np.empty((3, self.model.nv))
         self._reference_cache = OrderedDict()
         self.motion = None
         self.reference_work = dict(frames=0,interpolation_s=0.,differentiate_s=0.,
@@ -81,6 +83,11 @@ class World:
         # subtree COMs to body origins; angular/linear axes remain world axes.
         # This is the mj_objectVelocity(mjOBJ_XBODY, local=0) convention.
         started = time.perf_counter()
+        if not self.body_velocities:
+            result = BodyArray(self.body_names, np.concatenate((data.xpos[self.body_indices],
+                data.xquat[self.body_indices][:,[1,2,3,0]]), axis=1))
+            self.reference_work['body_storage_s'] += time.perf_counter()-started
+            return result
         mujoco.mj_comVel(self.model, data)
         self.reference_work['body_velocity_native_s'] += time.perf_counter()-started
         started = time.perf_counter()
@@ -92,7 +99,7 @@ class World:
         # simulation reader. Other body velocities use the equivalent spatial shift.
         self.reference_work['body_velocity_arrays_s'] += time.perf_counter()-started
         started = time.perf_counter()
-        jp, jr = np.empty((3, self.model.nv)), np.empty((3, self.model.nv))
+        jp, jr = self._jp, self._jr
         mujoco.mj_jacBody(self.model, data, jp, jr, self.root_body_id)
         velocity[self.root_body_row, 3:] = jp @ data.qvel
         velocity[self.root_body_row, :3] = jr @ data.qvel
@@ -109,35 +116,54 @@ class World:
         if key in self._reference_cache:
             self._reference_cache.move_to_end(key)
             return self._reference_cache[key]
-        started = time.perf_counter()
-        f = self.motion.sample(key)
-        t = f.source_time_s
-        # Centered finite difference in generalized coordinates over one source
-        # interval on either side; one-sided at endpoints. No clip time warp.
-        h = self.motion.times_s[1] - self.motion.times_s[0]
-        lo, hi = max(0.0, t-h), min(self.motion.duration_s, t+h)
-        qa = self._qpos(self.motion.sample(lo))
-        qb = self._qpos(self.motion.sample(hi))
-        d = self.reference_data
-        d.qpos[:] = self._qpos(f)
-        self.reference_work['interpolation_s'] += time.perf_counter()-started
-        started = time.perf_counter()
-        mujoco.mj_differentiatePos(self.model, d.qvel, hi-lo, qa, qb)
-        self.reference_work['differentiate_s'] += time.perf_counter()-started
-        started = time.perf_counter()
-        forward_kinematics(self.model, d)
-        self.reference_work['fk_native_s'] += time.perf_counter()-started
-        self.reference_work['frames'] += 1
-        bodies = self._bodies(d)
-        root = bodies[self.root_body_row]
-        f = replace(f, joint_velocity_rad_s=tuple(d.qvel[self.vadr]),
-                    root_linear_velocity_world_m_s=root.linear_velocity_world_m_s,
-                    root_angular_velocity_world_rad_s=root.angular_velocity_world_rad_s,
-                    bodies=bodies)
-        self._reference_cache[key] = f
-        if len(self._reference_cache) > getattr(self, 'reference_cache_capacity', 2048):
+        return self.references((key,))[0]
+
+    def references(self, times):
+        keys = tuple(round(float(t),12) for t in times)
+        missing = tuple(dict.fromkeys(k for k in keys if k not in self._reference_cache))
+        if missing:
+            self._prepare_references(missing)
+        result = tuple(self._reference_cache[k] for k in keys)
+        for key in keys:
+            self._reference_cache.move_to_end(key)
+        while len(self._reference_cache) > max(len(keys),getattr(self,'reference_cache_capacity',2048)):
             self._reference_cache.popitem(last=False)
-        return f
+        return result
+
+    def _prepare_references(self, keys):
+        started = time.perf_counter()
+        times = np.clip(keys,0.,self.motion.duration_s)
+        h = self.motion.times_s[1] - self.motion.times_s[0]
+        lo, hi = np.maximum(0.,times-h), np.minimum(self.motion.duration_s,times+h)
+        count = len(keys)
+        _,joints,positions,rotations = self.motion.sample_arrays(np.concatenate((times,lo,hi)))
+        qpos = np.empty((3*count,self.model.nq))
+        qpos[:] = self.model.qpos0
+        qpos[:,:3] = positions
+        qpos[:,3:7] = rotations[:,[3,0,1,2]]
+        qpos[:,self.qadr] = joints
+        self.reference_work['interpolation_s'] += time.perf_counter()-started
+        d = self.reference_data
+        for i,key in enumerate(keys):
+            d.qpos[:] = qpos[i]
+            started = time.perf_counter()
+            mujoco.mj_differentiatePos(self.model,d.qvel,hi[i]-lo[i],qpos[count+i],qpos[2*count+i])
+            self.reference_work['differentiate_s'] += time.perf_counter()-started
+            started = time.perf_counter()
+            forward_kinematics(self.model,d)
+            self.reference_work['fk_native_s'] += time.perf_counter()-started
+            self.reference_work['frames'] += 1
+            bodies = self._bodies(d)
+            if self.body_velocities:
+                linear,angular = bodies.values[self.root_body_row,7:10],bodies.values[self.root_body_row,10:13]
+            else:
+                started = time.perf_counter()
+                mujoco.mj_jacBody(self.model,d,self._jp,self._jr,self.root_body_id)
+                linear,angular = self._jp@d.qvel,self._jr@d.qvel
+                self.reference_work['body_velocity_native_s'] += time.perf_counter()-started
+            self._reference_cache[key] = ReferenceFrame(key,float(times[i]),tuple(joints[i]),
+                tuple(positions[i]),tuple(rotations[i]),tuple(d.qvel[self.vadr]),
+                tuple(linear),tuple(angular),bodies)
 
     def reset(self, motion):
         if motion.joint_names != self.joint_names:

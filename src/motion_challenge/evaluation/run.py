@@ -21,7 +21,7 @@ def clip_steps(world, motion, runtime, protocol, max_duration=None, trace=None, 
     state = yield ('reset', motion)
     offsets = runtime['reference_offsets_s']
     def window(t):
-        return tuple(world.reference(t+x) for x in offsets)
+        return world.references([t+x for x in offsets])
     yield ('policy_reset', controller_state(state, access), window(0), 0)
     command = yield ('act', controller_state(state, access), window(0))
     period = runtime['control_period_s']

@@ -1,4 +1,5 @@
 import io
+from dataclasses import astuple
 import json
 from pathlib import Path
 import unittest
@@ -40,14 +41,14 @@ class BatchPhysicsTests(unittest.TestCase):
                     actions = [command(t+episode+i) for i in ids]
                     inactive = [i for i in range(3) if i not in ids]
                     before = pool.qpos[inactive].copy()
-                    pool.advance(ids,actions,[t]*len(ids))
+                    pool.advance(ids,[astuple(a) for a in actions],[t]*len(ids))
                     np.testing.assert_array_equal(pool.qpos[inactive],before)
                     for i,action,state in zip(ids,actions,pool.states(ids)):
                         serial = serials[i]
                         serial.advance(action,t)
                         np.testing.assert_array_equal(pool.qpos[i],serial.data.qpos)
                         np.testing.assert_array_equal(pool.qvel[i],serial.data.qvel)
-                        np.testing.assert_array_equal(pool.xpos[i],serial.data.xpos)
+                        np.testing.assert_array_equal(state.bodies.values[:,:3],serial.data.xpos[list(pool.body_ids)])
                         expected = serial.state()
                         self.assertEqual(state.root_linear_velocity_world_m_s,expected.root_linear_velocity_world_m_s)
                         self.assertEqual(state.root_angular_velocity_world_rad_s,expected.root_angular_velocity_world_rad_s)

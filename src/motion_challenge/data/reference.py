@@ -1,6 +1,7 @@
 """Deterministic reference windows, without model-specific retargeting."""
 
 from bisect import bisect_right
+from collections import OrderedDict
 from dataclasses import dataclass
 import math
 
@@ -19,16 +20,25 @@ def normalize_quaternion(q: Vector) -> Vector:
 
 
 def slerp(a: Vector, b: Vector, fraction: float) -> Vector:
+    return _slerp_prepared(_rotation_segment(a,b), fraction)
+
+
+def _rotation_segment(a, b):
     a, b = normalize_quaternion(tuple(map(float,a))), normalize_quaternion(tuple(map(float,b)))
     dot = sum(x*y for x, y in zip(a, b))
     if dot < 0:
         b, dot = tuple(-x for x in b), -dot
     dot = min(1.0, max(-1.0, dot))
-    if dot > 0.9995:
-        return normalize_quaternion(tuple(x + fraction*(y-x) for x, y in zip(a, b)))
-    angle = math.acos(dot)
-    return tuple((math.sin((1-fraction)*angle)*x + math.sin(fraction*angle)*y)
-                 / math.sin(angle) for x, y in zip(a, b))
+    angle = None if dot > 0.9995 else math.acos(dot)
+    return a,b,angle,None if angle is None else math.sin(angle)
+
+
+def _slerp_prepared(segment, fraction):
+    a,b,angle,denominator = segment
+    if angle is None:
+        return normalize_quaternion(tuple(x+fraction*(y-x) for x,y in zip(a,b)))
+    sa,sb = math.sin((1-fraction)*angle),math.sin(fraction*angle)
+    return tuple((sa*x+sb*y)/denominator for x,y in zip(a,b))
 
 
 @dataclass(frozen=True)
@@ -69,6 +79,14 @@ class Motion:
             invalid=any(abs(sum(x*x for x in row)-1)>1e-3 for row in q)
         if invalid:
             raise ValueError("quaternion norm outside tolerance")
+        for name, values in (('_times', self.times_s), ('_joints', self.joint_positions_rad),
+                             ('_positions', self.root_positions_world_m),
+                             ('_orientations', self.root_orientations_xyzw)):
+            object.__setattr__(self, name, np.asarray(values, dtype=np.float64))
+        object.__setattr__(self, '_rotation_segments', OrderedDict())
+        values = np.concatenate((self._positions,self._joints),axis=1)
+        object.__setattr__(self, '_linear_values', values)
+        object.__setattr__(self, '_linear_delta', values[1:]-values[:-1])
 
     @property
     def duration_s(self) -> float:
@@ -88,6 +106,32 @@ class Motion:
         return ReferenceFrame(requested_time_s, t, interpolate(self.joint_positions_rad),
                               interpolate(self.root_positions_world_m),
                               slerp(self.root_orientations_xyzw[lo], self.root_orientations_xyzw[hi], alpha))
+
+    def sample_arrays(self, times):
+        """Interpolate a time group without constructing per-sample packets."""
+        times = np.asarray(times, dtype=np.float64)
+        if times.ndim != 1 or not np.isfinite(times).all():
+            raise ValueError('sample times must be a finite vector')
+        t = np.clip(times, 0., self.duration_s)
+        lo = np.clip(np.searchsorted(self._times, t, side='right')-1, 0, len(self._times)-2)
+        hi = lo+1
+        alpha = (t-self._times[lo])/(self._times[hi]-self._times[lo])
+        values = self._linear_values[lo]+alpha[:,None]*self._linear_delta[lo]
+        # Keep the frozen scalar quaternion arithmetic, including sign and
+        # endpoint normalization; only interval lookup and linear fields batch.
+        quaternions = np.empty((len(t),4))
+        cache = self._rotation_segments
+        for row,(index,fraction) in enumerate(zip(lo,alpha)):
+            segment = cache.get(index)
+            if segment is None:
+                segment = _rotation_segment(self._orientations[index],self._orientations[index+1])
+                cache[index] = segment
+                if len(cache)>128:
+                    cache.popitem(last=False)
+            else:
+                cache.move_to_end(index)
+            quaternions[row] = _slerp_prepared(segment,fraction)
+        return t, values[:,3:], values[:,:3], quaternions
 
 
 def reference_window(motion: Motion, time_s: float, offsets_s: tuple[float, ...],

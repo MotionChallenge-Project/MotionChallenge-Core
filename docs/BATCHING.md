@@ -14,7 +14,8 @@ maximum, not a promise of a full batch; the final batch and partial resets can b
 smaller. Core runs complete motions and refills slots without splitting motions.
 
 By default, batched adapters use up to four slots per available CPU (at most 64),
-scalar adapters use up to eight, and physics uses up to eight threads. Motion
+scalar adapters use up to eight. Physics uses eight threads for small batches,
+16 at 2,048 slots and 32 at 4,096, capped by available CPUs and slots. Motion
 count caps the actual slots. Override these bounds for larger workloads; they
 are conservative defaults, not a guarantee of optimal settings for every engine.
 
@@ -51,6 +52,12 @@ N is the current call size, J the canonical joint count, K the declared referenc
 window, B the reference body count. Quaternions use XYZW; units and axes are the
 same as the packet SDK. Full field definitions are in `sdk.py`.
 
+Array adapters may declare `"reference_bodies": ["pelvis", "torso_link"]` to
+receive only those reference bodies, in that order. Use `[]` when the policy
+only needs joints and root state: Core skips other body velocities and their
+input copies. Omit the field to receive all bodies. Core still computes every
+pose required by the benchmark's metrics; scoring is unchanged.
+
 Input arrays are read-only views valid until the call returns. Copy values kept
 in history. Calls can contain a reordered subset of slots; reset only those slots
 and return controls in the supplied order. Never infer motion identity from slot
@@ -73,17 +80,24 @@ Choose slots and batch size to fit host memory and the adapter's device memory;
 more slots are not always faster. Fixed-size engines may pad or split internally.
 Core has no CUDA or TensorRT dependency.
 
+The control loop processes state, reference interpolation, FK and scores as
+arrays across slots. Physics substeps update PD torques and advance MuJoCo;
+body snapshots are computed only at control/metric ticks in a separate native
+batch. Loading/reset initialization and finished-clip reports remain per clip.
+JSON/gzip runs on one bounded output worker, outside the control loop.
+
 Execution records include actual slots, physics threads and phase timings. A
 short synthetic scaling test validates allocation, refill and transport; it is
 not a throughput estimate for long motions or large neural policies.
 
 ## Timing
 
-The result records native MuJoCo `step`, `forward`, `reset` and `jac` time,
-reference/trace bookkeeping, metrics and policy calls separately. Policy timing
+The result records native MuJoCo stepping, snapshot/reference FK,
+reference processing, metrics and policy calls separately. Policy timing
 also separates input assembly, adapter execution and control validation. These
 nested timers must not be added to their enclosing totals. Direct calls have
-zero IPC time; input assembly can still copy arrays. Adapter execution includes
+zero IPC time; input assembly can still copy arrays. Output-worker timings overlap
+the control loop and must not be added to its wall time. Adapter execution includes
 its observation construction and inference, not just the neural network.
 
 Progress reports include elapsed time and cumulative phase timings every five

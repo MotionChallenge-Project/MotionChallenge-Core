@@ -127,7 +127,7 @@ def main(adapter_root=None):
     p.add_argument('--backend', choices=['batch'], default='batch', help=argparse.SUPPRESS)
     p.add_argument('--termination', choices=['both', 'early', 'none'], default='both',
                    help='Compute both metric scopes from one full rollout (default), or select a diagnostic mode')
-    p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to min(8, slots, available CPUs)')
+    p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults scale from 8 to 32 with slots, capped by available CPUs')
     p.add_argument('--progress-interval', type=float, default=5.0)
     p.add_argument('--no-traces', action='store_true', help='Online results only; skip trace recording and independent verification')
     p.add_argument('--offline', action='store_true')

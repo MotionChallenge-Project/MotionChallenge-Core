@@ -58,7 +58,7 @@ def source_snapshot(root):
     """Bind adapter source and dependency lock to the result without copying data."""
     names = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z'], text=True).split('\0')
     files = {name: sha256_file(root/name) for name in names
-             if name and (root/name).is_file() and name != 'motion-challenge'}
+             if name and (root/name).is_file()}
     def git(*args):
         return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
     cores = [root/name for name in ('MotionChallenge-Core', 'motion-challenge')
@@ -88,7 +88,7 @@ def resolve_artifacts(runtime, root, overrides=(), offline=False, progress=None)
             raise ValueError('invalid artifact name or SHA256')
         local = root/item['path']
         path = selected.get(name, local if local.is_file() else
-            Path.home()/'.cache/motion-challenge/checkpoints'/item['sha256']/Path(item['path']).name)
+            Path.home()/'.cache/MotionChallenge/checkpoints'/item['sha256']/Path(item['path']).name)
         path = artifact(path, item['sha256'], item.get('url'), offline, progress)
         resolved[name] = {**item, 'path': str(path.resolve())}
     return resolved
@@ -97,7 +97,7 @@ def resolve_artifacts(runtime, root, overrides=(), offline=False, progress=None)
 def main(adapter_root=None):
     p = argparse.ArgumentParser(description='Evaluate a checkpoint with the shared benchmark core.')
     p.add_argument('--suite', default='lafan40', choices=['lafan40'])
-    p.add_argument('--data', type=Path, default=Path(os.environ.get('MOTION_CHALLENGE_DATA', '~/.cache/motion-challenge/lafan')))
+    p.add_argument('--data', type=Path, default=Path(os.environ.get('MOTION_CHALLENGE_DATA', '~/.cache/MotionChallenge/lafan')))
     p.add_argument('--weights', type=Path)
     p.add_argument('--artifact', action='append', default=[], metavar='NAME=PATH',
                    help='Use a cached additional model component; repeat for multi-file policies')
@@ -120,7 +120,7 @@ def main(adapter_root=None):
     original = root/'runtime.json'
     runtime = json.loads(original.read_text())
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
-    output = external_output_path((a.output or Path.home()/'.local/share/motion-challenge/runs'/runtime['id']/stamp).expanduser())
+    output = external_output_path((a.output or Path.home()/'.local/share/MotionChallenge/runs'/runtime['id']/stamp).expanduser())
     if output.exists() and any(output.iterdir()):
         raise ValueError('output directory must be new or empty; existing evidence is never overwritten')
     output.mkdir(parents=True, exist_ok=True)
@@ -135,7 +135,7 @@ def main(adapter_root=None):
     if 'weights_sha256' in runtime:
         local = root/runtime.get('weights', 'checkpoints/policy.onnx')
         weights = (a.weights.expanduser().resolve() if a.weights else local if local.is_file()
-                   else Path.home()/'.cache/motion-challenge/checkpoints'/runtime['weights_sha256']/'policy.onnx')
+                   else Path.home()/'.cache/MotionChallenge/checkpoints'/runtime['weights_sha256']/'policy.onnx')
         if not weights.exists() and not a.offline and runtime.get('prepare_checkpoint'):
             sys.path.insert(0, str(root))
             module, function = runtime['prepare_checkpoint'].split(':')
@@ -153,7 +153,7 @@ def main(adapter_root=None):
 
 def run_pair(root, args, runtime, output, source, stamp):
     """Roll out once; verification computes both metric scopes from that trace."""
-    record = {'schema': 'motion-challenge/paired-evaluation-v1', 'status': 'running',
+    record = {'schema': 'MotionChallenge/paired-evaluation-v1', 'status': 'running',
               'execution': 'single_full_rollout', 'started_utc': stamp, 'source': source,
               'checkpoint_sha256': runtime.get('weights_sha256'), 'modes': {}}
     summary_path = output/'summary.json'

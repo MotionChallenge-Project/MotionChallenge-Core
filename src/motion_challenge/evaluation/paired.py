@@ -25,7 +25,7 @@ def combine(early, full, source, checkpoint_sha256):
                       'metrics': {'until_first_failure': prefix['metric_means_over_observed_prefix'],
                                   'full_motion': whole['metric_means_over_observed_prefix']},
                       'sample_count': {'until_first_failure': prefix['sample_count'], 'full_motion': whole['sample_count']}})
-    return {'schema': 'motion-challenge/unified-result-v1', 'status': 'trace_verified',
+    return {'schema': 'MotionChallenge/unified-result-v1', 'status': 'trace_verified',
             'source': source, 'checkpoint_sha256': checkpoint_sha256,
             **{k: early[k] for k in ('controller_id', 'suite_sha256', 'robot_profile_sha256', 'mujoco_version', 'backend')},
             'success_count': sum(c['success'] for c in clips), 'total': len(clips),

@@ -5,11 +5,11 @@ import sysconfig
 
 def resource_root():
     checkout=Path(__file__).resolve().parents[2]
-    installed=Path(sysconfig.get_path('data'))/'share/motion-challenge'
+    installed=Path(sysconfig.get_path('data'))/'share/MotionChallenge-Core'
     for root in (checkout,installed):
         if (root/'suites/lafan/dataset.json').is_file() and (root/'robots/g1-29dof-cpu-v0.json').is_file():
             return root
-    raise FileNotFoundError('Motion Challenge package is missing its frozen suite/robot assets')
+    raise FileNotFoundError('MotionChallenge package is missing its frozen suite/robot assets')
 
 
 def lafan_paths(termination='early'):

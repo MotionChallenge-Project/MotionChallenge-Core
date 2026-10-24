@@ -9,7 +9,7 @@
 Copyright 2025, The mjlab Developers. The upstream Apache-2.0 license is retained
 as `robots/LICENSE.mjlab` and included in built distributions.
 
-Motion Challenge removed visual meshes, added a ground plane, set nominal
+MotionChallenge removed visual meshes, added a ground plane, set nominal
 friction to 1, fixed reflected motor inertias, and added saturated torque motors
 for per-step external PD control. The source and adapted asset SHA256 values,
 motor profile, and modifications are recorded in `robots/g1-29dof-cpu-v0.json`.

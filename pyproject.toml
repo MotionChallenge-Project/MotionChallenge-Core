@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "motion-challenge"
+name = "MotionChallenge-Core"
 version = "0.0.2.dev0"
 description = "Auditable motion-controller benchmark contracts and suites"
 readme = "README.md"
@@ -23,14 +23,14 @@ Repository = "https://github.com/MotionChallenge-Project/MotionChallenge-Core"
 Issues = "https://github.com/MotionChallenge-Project/MotionChallenge-Core/issues"
 
 [project.scripts]
-motion-challenge = "motion_challenge.cli:main"
-motion-challenge-eval = "motion_challenge.run:main"
-motion-challenge-merge = "motion_challenge.merge:main"
-motion-challenge-verify = "motion_challenge.verify:main"
+motionchallenge = "motion_challenge.cli:main"
+motionchallenge-eval = "motion_challenge.run:main"
+motionchallenge-merge = "motion_challenge.merge:main"
+motionchallenge-verify = "motion_challenge.verify:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.data-files]
-"share/motion-challenge/suites/lafan" = ["suites/lafan/*.json"]
-"share/motion-challenge/robots" = ["robots/*.json", "robots/*.xml", "robots/LICENSE*"]
+"share/MotionChallenge-Core/suites/lafan" = ["suites/lafan/*.json"]
+"share/MotionChallenge-Core/robots" = ["robots/*.json", "robots/*.xml", "robots/LICENSE*"]

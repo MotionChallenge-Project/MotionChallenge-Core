@@ -47,7 +47,7 @@ subprocess.run([sys.executable,'-m','motion_challenge.verify',*common,'--result'
 
 def create_project(destination,core_path):
     destination=Path(destination).resolve();core_path=Path(core_path).resolve()
-    if not (core_path/'pyproject.toml').is_file():raise ValueError('core-path must be the Motion Challenge source checkout')
+    if not (core_path/'pyproject.toml').is_file():raise ValueError('core-path must be the MotionChallenge source checkout')
     if destination==core_path or core_path in destination.parents:raise ValueError('create the consumer outside the core repository')
     if destination.exists() and any(destination.iterdir()):raise ValueError('destination must be absent or empty')
     destination.mkdir(parents=True,exist_ok=True)
@@ -55,7 +55,7 @@ def create_project(destination,core_path):
     subprocess.run(['git','-C',str(destination),'-c','protocol.file.allow=always','submodule','add',str(core_path),'MotionChallenge-Core'],check=True,capture_output=True)
     subprocess.run(['git','-C',str(destination),'config','-f','.gitmodules','submodule.MotionChallenge-Core.url','https://github.com/MotionChallenge-Project/MotionChallenge-Core.git'],check=True)
     dependency='MotionChallenge-Core'
-    (destination/'pyproject.toml').write_text('[project]\nname = "motion-challenge-consumer"\nversion = "0.0.1"\nrequires-python = ">=3.12,<3.13"\ndependencies = ["motion-challenge"]\n\n[tool.uv.sources]\nmotion-challenge = {path = '+json.dumps(dependency)+', editable = true}\n')
+    (destination/'pyproject.toml').write_text('[project]\nname = "MotionChallenge-your-model"\nversion = "0.0.1"\nrequires-python = ">=3.12,<3.13"\ndependencies = ["MotionChallenge-Core"]\n\n[tool.uv.sources]\nmotionchallenge-core = {path = '+json.dumps(dependency)+', editable = true}\n')
     (destination/'.python-version').write_text('3.12\n')
     (destination/'.gitignore').write_text('.venv/\n__pycache__/\n*.pyc\n')
     (destination/'adapter.py').write_text(FIXTURE)

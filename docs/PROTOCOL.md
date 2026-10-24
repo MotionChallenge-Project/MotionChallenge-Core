@@ -76,7 +76,7 @@ total clips, passed clips and each active motion's simulated time. External
 `*.progress.json` snapshots and JSONL events support dashboards and monitoring.
 
 
-`motion-challenge-eval --clip-id <exact-suite-id>` evaluates selected complete
+`motionchallenge-eval --clip-id <exact-suite-id>` evaluates selected complete
 motions without changing the suite manifest. Repeat the flag for a shard.
 `uv run python -m motion_challenge.merge --output ... --suite ... --robot ...
 --protocol ... --data ... --controller ... shard1.json shard2.json ...` verifies
@@ -99,7 +99,7 @@ disclosed; inference-only testing does not imply an unseen dataset.
 Dataset files remain upstream under their own terms:
 https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset
 
-Result verification is also in the core: `uv run motion-challenge-verify` takes
+Result verification is also in the core: `uv run motionchallenge-verify` takes
 the result, suite, robot, protocol, dataset cache and controller configuration.
 It validates hashes and independently recomputes FK, failures and metrics from
 the compressed pose trace stored beside the external result. This checks

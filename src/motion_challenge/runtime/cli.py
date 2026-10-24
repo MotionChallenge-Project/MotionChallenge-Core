@@ -11,7 +11,7 @@ def read(path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Motion Challenge dataset and controller verification tools")
+    parser = argparse.ArgumentParser(description="MotionChallenge dataset and controller verification tools")
     commands = parser.add_subparsers(dest="command", required=True)
     fetch = commands.add_parser("fetch-dataset")
     fetch.add_argument("--manifest", required=True)

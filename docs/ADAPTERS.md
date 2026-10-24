@@ -32,9 +32,9 @@ from motion_challenge.entrypoint import main
 main(Path(__file__).parent)
 ```
 
-Declare `motion-challenge = {path = "MotionChallenge-Core", editable = true}` in
+Declare `motionchallenge-core = {path = "MotionChallenge-Core", editable = true}` in
 `[tool.uv.sources]`. Commit the submodule pointer and `uv.lock`. For a new adapter,
-`motion-challenge init-adapter --core-path CORE_CHECKOUT --output NEW_DIRECTORY`
+`motionchallenge init-adapter --core-path CORE_CHECKOUT --output NEW_DIRECTORY`
 creates a separate reference-PD interface fixture with the same layout. It is
 not a trained model or a leaderboard submission.
 

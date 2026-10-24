@@ -1,6 +1,6 @@
 # Build an independent benchmark
 
-A benchmark project depends on the same pinned `motion-challenge` package as
+A benchmark project depends on the same pinned `MotionChallenge-Core` package as
 model adapters. It owns its dataset manifest, protocol, documentation, and any
 dataset conversion. The core owns reference interpolation, simulation, clocks,
 failures, metric computation, shard merging, and result verification.
@@ -24,14 +24,14 @@ Use the dependency example in [ADAPTERS.md](ADAPTERS.md). After `uv sync`, invok
 the core with the external suite/protocol and a model's runtime configuration:
 
 ```sh
-uv run motion-challenge-eval \
+uv run motionchallenge-eval \
   --suite ./dataset.json --protocol ./protocol.json \
-  --robot /path/reported/by/motion-challenge-paths/g1-29dof-cpu-v0.json \
+  --robot /path/reported/by/motionchallenge-paths/g1-29dof-cpu-v0.json \
   --controller ../my-controller/runtime.json \
   --data /external/cache/my-suite --output /external/runs/evaluation.json
 ```
 
-The robot path is available through `motion-challenge paths` or
+The robot path is available through `motionchallenge paths` or
 `motion_challenge.resources.lafan_paths()['robot']`. The bundled dataset and
 protocol JSON files are examples of supported schemas. A new suite declares
 its own ID, complete motion set, source FPS, joint order, immutable source

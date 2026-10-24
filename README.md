@@ -40,3 +40,5 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 [Project](https://github.com/MotionChallenge-Project)
 
 Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).
+
+[Observation admission rules](docs/OBSERVATIONS.md): ideal proprioception with no global position feedback is a separate, versioned track.

@@ -17,6 +17,7 @@ import threading
 
 from motion_challenge.runtime.progress import Progress
 from motion_challenge.runtime.encoding import RequestEncoder
+from motion_challenge.runtime.observations import controller_state, validate_access
 
 from motion_challenge.data.dataset import load_csv_motion
 from motion_challenge.simulation.physics import World, tracking_sample
@@ -72,12 +73,13 @@ class Worker:
 
 
 def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, trace=None, on_step=None):
+    access = validate_access(protocol, runtime)
     state = world.reset(motion)
     offsets = runtime['reference_offsets_s']
     def window(t):
         return tuple(world.reference(t+x) for x in offsets)
-    worker.call('reset', state, window(0), seed=0)
-    command = worker.call('act', state, window(0))
+    worker.call('reset', controller_state(state, access), window(0), seed=0)
+    command = worker.call('act', controller_state(state, access), window(0))
     period = runtime['control_period_s']
     metric_dt = protocol['metric_period_s']
     end = motion.duration_s if max_duration is None else min(max_duration, motion.duration_s)
@@ -113,7 +115,7 @@ def evaluate_clip(world, motion, worker, runtime, protocol, max_duration=None, t
         if next_t >= end-1e-9:
             break
         if next_t >= control_i*period-1e-9:
-            command = worker.call('act', state, window(next_t))
+            command = worker.call('act', controller_state(state, access), window(next_t))
             control_i += 1
     means = {k: math.fsum(s[k] for s in samples)/len(samples)
              for k in samples[0] if k != 'time_s'} if samples else {}
@@ -168,12 +170,14 @@ def main():
         if not set(a.clip_id) <= {f['path'] for f in manifest['files']}:
             raise ValueError('clip ID is not in the frozen suite')
     protocol = json.loads(a.protocol.read_text())
+    access = validate_access(protocol, runtime)
     engine = __import__('mujoco').__version__
     if protocol.get('mujoco_version', engine) != engine:
         raise ValueError('installed MuJoCo does not match the frozen protocol')
     a.output.parent.mkdir(parents=True, exist_ok=True)
     results = {'kind': 'development_evaluation', 'official': False,
         'protocol_id': protocol['id'],
+        'state_access': access,
         'termination_mode': 'early_termination' if protocol.get('terminate_on_failure', True) else 'no_termination',
         'metric_scope': 'observed_prefix' if protocol.get('terminate_on_failure', True) else 'full_motion',
         'controller_id': runtime['id'], 'controller_config_sha256': sha256_file(a.controller),

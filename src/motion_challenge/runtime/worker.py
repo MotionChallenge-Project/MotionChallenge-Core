@@ -7,11 +7,16 @@ from pathlib import Path
 import sys
 import traceback
 
-from motion_challenge.sdk import BodyState, ReferenceFrame, StatePacket
+from motion_challenge.sdk import BodyState, ReferenceFrame, StatePacket, ProprioceptiveStatePacket
 
 
 def packet(cls, data):
     data = dict(data)
+    if cls is StatePacket and 'schema' in data:
+        if data['schema'] != 'ideal-proprioceptive-no-position-v1':
+            raise ValueError('unknown state packet schema')
+        data['joint_names'] = tuple(data['joint_names'])
+        return ProprioceptiveStatePacket(**data)
     data['bodies'] = tuple(BodyState(**b) for b in data.get('bodies', []))
     if 'joint_names' in data:
         data['joint_names'] = tuple(data['joint_names'])

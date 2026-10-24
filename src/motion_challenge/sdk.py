@@ -50,6 +50,25 @@ class StatePacket:
 
 
 @dataclass(frozen=True)
+class ProprioceptiveStatePacket:
+    """Ideal measurements; no translation, contacts, or actual body poses.
+
+    Velocities are measured at the root body origin and expressed in world
+    axes. Full orientation includes yaw. Local FK is permitted; integrating
+    measurements into displacement or a root-position estimate is not.
+    """
+
+    time_s: float
+    joint_names: tuple[str, ...]
+    joint_position_rad: Vector
+    joint_velocity_rad_s: Vector
+    root_orientation_xyzw: Vector
+    root_linear_velocity_world_m_s: Vector
+    root_angular_velocity_world_rad_s: Vector
+    schema: str = 'ideal-proprioceptive-no-position-v1'
+
+
+@dataclass(frozen=True)
 class ControlCommand:
     """PD command in packet joint order. Kernel owns motor limits and dynamics.
 

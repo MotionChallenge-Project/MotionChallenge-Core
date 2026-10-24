@@ -5,16 +5,16 @@ from dataclasses import asdict, replace
 
 from motion_challenge.runtime.encoding import RequestEncoder
 from motion_challenge.runtime.worker import packet
-from motion_challenge.sdk import BodyState, ReferenceFrame, StatePacket
+from motion_challenge.sdk import BodyState, ReferenceFrame, ProprioceptiveStatePacket
 
 
 class EncodingTests(unittest.TestCase):
     def setUp(self):
         body = BodyState('body " unicode骨盆', (1., -0., 3.), (0., 0., 0., 1.),
                          (0., 0., 0.), (0., 0., 0.))
-        self.state = StatePacket(.02, ('joint1', 'joint2'), (1., 2.), (3., 4.),
-                                 (1., 2., 3.), (0., 0., 0., 1.), (0., 0., 0.),
-                                 (0., 0., 0.), (body,))
+        self.state = ProprioceptiveStatePacket(.02, ('joint1', 'joint2'), (1., 2.), (3., 4.),
+                                 (0., 0., 0., 1.), (0., 0., 0.),
+                                 (0., 0., 0.))
         self.reference = ReferenceFrame(.04, .04, (1., 2.), (1., 2., 3.),
                                         (0., 0., 0., 1.), bodies=(body,))
 
@@ -27,8 +27,8 @@ class EncodingTests(unittest.TestCase):
             actual = encoder.request(op, self.state, refs, 23)
             self.assertEqual(actual, expected)
             data = json.loads(actual)
-            self.assertEqual(packet(StatePacket, data['state']),
-                             packet(StatePacket, json.loads(expected)['state']))
+            self.assertEqual(packet(ProprioceptiveStatePacket, data['state']),
+                             packet(ProprioceptiveStatePacket, json.loads(expected)['state']))
 
     def test_cache_bounded_and_reset_does_not_reuse_clip_data(self):
         encoder = RequestEncoder(capacity=2)

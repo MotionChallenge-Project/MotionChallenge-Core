@@ -94,18 +94,14 @@ def resolve_artifacts(runtime, root, overrides=(), offline=False, progress=None)
     return resolved
 
 
-def select_track(runtime, track, root):
-    """A declaration selects inference; it does not itself certify admission."""
-    from motion_challenge.runtime.observations import PRIVILEGED, PROPRIOCEPTIVE
+def resolve_observation_contract(runtime, root):
+    """Require the fixed observation contract and exact-checkpoint evidence."""
+    from motion_challenge.runtime.observations import PROPRIOCEPTIVE, validate_access
     resolved = dict(runtime)
-    if track == 'privileged':
-        resolved['state_access'] = PRIVILEGED
-        return resolved
-    if track != 'ideal-proprioception':
-        raise ValueError('unknown observation track')
-    declaration = runtime.get('observation_tracks', {}).get(track)
+    validate_access({'state_access': PROPRIOCEPTIVE}, runtime)
+    declaration = runtime.get('observation_contract')
     if not declaration:
-        raise ValueError('checkpoint has no declared inference path for this observation track')
+        raise ValueError('checkpoint has no declared observation admission record')
     record = root / declaration['admission_record']
     if sha256_file(record) != declaration['admission_sha256']:
         raise ValueError('observation admission record checksum mismatch')
@@ -116,19 +112,12 @@ def select_track(runtime, track, root):
         raise ValueError('admission record refers to a different observation protocol')
     if admission.get('status') != 'inference_verified':
         raise ValueError('checkpoint observation admission is not inference_verified')
-    resolved['entrypoint'] = declaration['entrypoint']
-    resolved.pop('batch_entrypoint', None)
-    if declaration.get('batch_entrypoint'):
-        resolved['batch_entrypoint'] = declaration['batch_entrypoint']
-    resolved['state_access'] = PROPRIOCEPTIVE
     resolved['observation_admission_sha256'] = declaration['admission_sha256']
     return resolved
 
 
 def main(adapter_root=None):
     p = argparse.ArgumentParser(description='Evaluate a checkpoint with the shared benchmark core.')
-    p.add_argument('--track', choices=['privileged', 'ideal-proprioception'],
-                   help='Observation protocol; defaults to the adapter-declared track')
     p.add_argument('--suite', default='lafan40', choices=['lafan40'])
     p.add_argument('--data', type=Path, default=Path(os.environ.get('MOTION_CHALLENGE_DATA', '~/.cache/MotionChallenge/lafan')))
     p.add_argument('--weights', type=Path)
@@ -152,8 +141,7 @@ def main(adapter_root=None):
     root = Path(adapter_root or Path.cwd()).resolve()
     original = root/'runtime.json'
     runtime = json.loads(original.read_text())
-    a.track = a.track or runtime.get('default_track', 'privileged')
-    runtime = select_track(runtime, a.track, root)
+    runtime = resolve_observation_contract(runtime, root)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     output = external_output_path((a.output or Path.home()/'.local/share/MotionChallenge/runs'/runtime['id']/stamp).expanduser())
     if output.exists() and any(output.iterdir()):
@@ -161,7 +149,7 @@ def main(adapter_root=None):
     output.mkdir(parents=True, exist_ok=True)
     progress = Progress(output/'progress.json', a.progress_interval)
     a.data = external_output_path(a.data.expanduser())
-    paths = lafan_paths('early', a.track)
+    paths = lafan_paths('early')
     manifest = json.loads(paths['suite'].read_text())
     if not a.offline:
         print(json.dumps(fetch_dataset(manifest, a.data, progress)), flush=True)
@@ -230,14 +218,14 @@ def run_pair(root, args, runtime, output, source, stamp):
 
 
 def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False):
-    paths = lafan_paths(mode, getattr(a, 'track', 'privileged'))
+    paths = lafan_paths(mode)
     manifest = json.loads(paths['suite'].read_text())
     progress = Progress(output/'progress.json', a.progress_interval)
     resolved = output/'runtime.json'
     resolved.write_text(json.dumps(runtime, indent=2)+'\n')
     receipt = {'submitter': 'local-run', 'source': before,
                'source_runtime_sha256': sha256_file(root/'runtime.json'), 'resolved_runtime_sha256': sha256_file(resolved),
-               'suite': a.suite, 'observation_track': getattr(a, 'track', 'privileged'), 'state_access': runtime.get('state_access', 'privileged-state-v0'), 'started_utc': stamp, 'author_inference_review': 'not_granted_by_runner',
+               'suite': a.suite, 'state_access': runtime['state_access'], 'started_utc': stamp, 'author_inference_review': 'not_granted_by_runner',
                'output': str(output), 'status': 'running', 'backend': a.backend,
                'termination_mode': 'early_termination' if mode == 'early' else 'no_termination',
                'batch_size': a.jobs}
@@ -286,7 +274,7 @@ def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False)
         # Both complete and smoke records use the same verified path.
         shutil.copyfile(results[0], output/'result.json')
         options = ({'prefix_result_path': output/'prefix-result.json',
-                    'prefix_protocol_path': lafan_paths('early', getattr(a, 'track', 'privileged'))['protocol']} if derive_prefix else {})
+                    'prefix_protocol_path': lafan_paths('early')['protocol']} if derive_prefix else {})
         check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, jobs=count, **options)
         verification_finished = time.monotonic()
         receipt['timings_s'] = {'rollout': rollout_finished-run_started,

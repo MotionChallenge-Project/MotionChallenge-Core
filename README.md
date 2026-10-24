@@ -21,7 +21,7 @@ Each adapter pins `MotionChallenge-Core` and produces verified results using the
 | GRIT | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-grit) |
 | SONIC v1.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1) |
 | HoloMotion v1.4.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1) |
-| PMT Flat | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-pmt-flat) |
+| PMT RGMT | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-pmt-rgmt) |
 
 Clone an adapter with `--recurse-submodules`, then run `uv sync` and
 `uv run evaluate.py`.
@@ -41,4 +41,4 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).
 
-[Observation admission rules](docs/OBSERVATIONS.md): ideal proprioception with no global position feedback is a separate, versioned track.
+All controllers use [ideal proprioception without global position feedback](docs/OBSERVATIONS.md).

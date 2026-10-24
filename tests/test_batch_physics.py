@@ -48,8 +48,8 @@ class BatchPhysicsTests(unittest.TestCase):
             self.assertEqual(pool.run(trajectory), [0, 1, 2])
 
     def test_serial_batch_full_evaluation_trace_and_failure_match(self):
-        protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-v1.json').read_text())
-        runtime = {'control_period_s': .013, 'reference_offsets_s': [0., .013]}
+        protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v1.json').read_text())
+        runtime = {'state_access':'ideal-proprioceptive-no-position-v1', 'control_period_s': .013, 'reference_offsets_s': [0., .013]}
         class FakeWorker:
             def call(self, op, state, reference, seed=0):
                 if op == 'reset':

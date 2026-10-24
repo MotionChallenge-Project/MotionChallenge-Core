@@ -7,8 +7,8 @@ def combine(early, full, source, checkpoint_sha256):
                 'robot_profile_sha256', 'mujoco_version', 'backend'):
         if early[key] != full[key]:
             raise ValueError(f'Paired evaluation has different {key}')
-    if early.get('state_access', 'privileged-state-v0') != full.get('state_access', 'privileged-state-v0'):
-        raise ValueError('Paired evaluation has different observation access')
+    from motion_challenge.runtime.observations import validate_access
+    validate_access(early, full)
     a = {c['id']: c for c in early['clips']}
     b = {c['id']: c for c in full['clips']}
     if not a or a.keys() != b.keys() or len(a) != len(early['clips']) or len(b) != len(full['clips']):
@@ -29,7 +29,7 @@ def combine(early, full, source, checkpoint_sha256):
                       'sample_count': {'until_first_failure': prefix['sample_count'], 'full_motion': whole['sample_count']}})
     return {'schema': 'MotionChallenge/unified-result-v1', 'status': 'trace_verified',
             'source': source, 'checkpoint_sha256': checkpoint_sha256,
-            'state_access': early.get('state_access', 'privileged-state-v0'),
+            'state_access': early['state_access'],
             'protocols': {scope: {k: item.get(k) for k in ('protocol_id', 'protocol_sha256')}
                           for scope, item in [('until_first_failure', early), ('full_motion', full)]},
             **{k: early[k] for k in ('controller_id', 'suite_sha256', 'robot_profile_sha256', 'mujoco_version', 'backend')},

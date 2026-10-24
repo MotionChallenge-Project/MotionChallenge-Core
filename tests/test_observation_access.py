@@ -34,15 +34,19 @@ class ObservationAccessTests(unittest.TestCase):
             self.assertEqual(set(payload['state']),set(asdict(a)))
             self.assertNotIn('bodies',payload['state'])
             self.assertNotIn('root_position_world_m',payload['state'])
-            decoded=packet(StatePacket,payload['state'])
+            decoded=packet(ProprioceptiveStatePacket,payload['state'])
             self.assertIsInstance(decoded,ProprioceptiveStatePacket)
             with self.assertRaises(TypeError):
-                packet(StatePacket,{**payload['state'],'root_position_world_m':[0,0,0]})
+                packet(ProprioceptiveStatePacket,{**payload['state'],'root_position_world_m':[0,0,0]})
 
     def test_unknown_schema_and_access_mismatch_fail_closed(self):
-        with self.assertRaises(ValueError): packet(StatePacket,{'schema':'unknown'})
+        with self.assertRaises(ValueError): packet(ProprioceptiveStatePacket,{'schema':'unknown'})
+        with self.assertRaises(ValueError): packet(ProprioceptiveStatePacket,asdict(self.fixture()))
         with self.assertRaises(ValueError): validate_access({'state_access':PROPRIOCEPTIVE},{})
         with self.assertRaises(ValueError): validate_access({'state_access':'unknown'},{})
+        for obsolete in ({}, {'state_access':'privileged-state-v0'}):
+            with self.assertRaises(ValueError): validate_access(obsolete, obsolete)
+            with self.assertRaises(ValueError): controller_state(self.fixture(),obsolete.get('state_access'))
 
     def test_fk_uses_only_permitted_measurements(self):
         state=self.fixture(); view=KinematicStateView(lafan_paths()['robot'])
@@ -53,18 +57,30 @@ class ObservationAccessTests(unittest.TestCase):
             np.testing.assert_allclose(a.linear_velocity_world_m_s,b.linear_velocity_world_m_s,atol=1e-14)
         with self.assertRaises(TypeError): view.reconstruct(state)
 
-    def test_new_protocol_preserves_physics_and_metrics(self):
+    def test_only_proprioceptive_protocols_are_available(self):
         for mode in ('early','none'):
-            old=json.loads(lafan_paths(mode)['protocol'].read_text())
-            new=json.loads(lafan_paths(mode,'ideal-proprioception')['protocol'].read_text())
-            self.assertNotEqual(old['id'],new.pop('id'))
-            old.pop('id'); self.assertEqual(new.pop('state_access'),PROPRIOCEPTIVE)
-            self.assertIn('forbidden',new.pop('observation_rules'))
-            self.assertEqual(old,new)
+            protocol=json.loads(lafan_paths(mode)['protocol'].read_text())
+            self.assertEqual(protocol['state_access'],PROPRIOCEPTIVE)
+            self.assertIn('forbidden',protocol['observation_rules'])
+        with self.assertRaises(TypeError): lafan_paths('early','privileged')
 
     def test_undeclared_checkpoint_cannot_opt_in(self):
-        from motion_challenge.runtime.entrypoint import select_track
-        with self.assertRaisesRegex(ValueError,'no declared inference path'):
-            select_track({'weights_sha256':'fixed'},'ideal-proprioception',Path('.'))
+        from motion_challenge.runtime.entrypoint import resolve_observation_contract
+        with self.assertRaisesRegex(ValueError,'no declared observation admission'):
+            resolve_observation_contract({'weights_sha256':'fixed','state_access':PROPRIOCEPTIVE},Path('.'))
+
+    def test_admission_binds_exact_weight_and_verified_status(self):
+        from motion_challenge.runtime.entrypoint import resolve_observation_contract
+        from motion_challenge.validation import sha256_file
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);record=root/'admission.json'
+            runtime={'weights_sha256':'fixed','state_access':PROPRIOCEPTIVE,'entrypoint':'adapter:create'}
+            for status,weight,accepted in [('inference_verified','fixed',True),('pending','fixed',False),('inference_verified','other',False)]:
+                record.write_text(json.dumps({'checkpoint_sha256':weight,'status':status,'state_access':PROPRIOCEPTIVE}))
+                runtime['observation_contract']={'admission_record':'admission.json','admission_sha256':sha256_file(record)}
+                if accepted:
+                    self.assertEqual(resolve_observation_contract(runtime,root)['entrypoint'],'adapter:create')
+                else:
+                    with self.assertRaises(ValueError): resolve_observation_contract(runtime,root)
 
 if __name__=='__main__':unittest.main()

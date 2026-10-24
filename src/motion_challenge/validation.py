@@ -67,7 +67,7 @@ def validate_controller(manifest, joint_names):
         raise ValueError("invalid reference time offsets")
     if any(b <= a for a, b in zip(offsets, offsets[1:])):
         raise ValueError("reference time offsets must strictly increase")
-    if manifest["state_access"] != "privileged-state-v0" or manifest["action_mode"] != "joint-pd-feedforward":
+    if manifest["state_access"] != "ideal-proprioceptive-no-position-v1" or manifest["action_mode"] != "joint-pd-feedforward":
         raise ValueError("unsupported state/action contract")
     if manifest["training_overlap"] not in ("seen", "unseen-attested", "unknown"):
         raise ValueError("training overlap must be declared")

@@ -10,6 +10,7 @@ MotionChallenge-your-model/
   runtime.json           # clocks, input access, checkpoint/config hashes
   policy.json            # native model configuration
   provenance.json        # upstream source and review evidence
+  admission.json         # exact-checkpoint observation validation
   evaluate.py            # calls the core runner
   pyproject.toml
   uv.lock
@@ -63,6 +64,29 @@ gains and optional feedforward torque in canonical joint order. Quaternions are
 xyzw. `reset` clears all history, filters and recurrent state. The core owns
 reference interpolation, simulation, timing, limits, failures and scoring.
 Adapters receive neither clip names nor scores.
+
+Every controller receives `ProprioceptiveStatePacket`, including full orientation,
+joint state and root velocities. World position, contact feedback and explicit
+position estimation are prohibited. Full reference motion remains available.
+See the frozen [observation rules](OBSERVATIONS.md).
+
+Declare the single observation contract in `runtime.json`:
+
+```json
+{
+  "state_access": "ideal-proprioceptive-no-position-v1",
+  "entrypoint": "adapter:create",
+  "observation_contract": {
+    "admission_record": "admission.json",
+    "admission_sha256": "SHA256 of the admission file"
+  }
+}
+```
+
+The runner requires an `inference_verified` admission record for the exact
+checkpoint hash before downloading data or starting evaluation. The generated
+reference-PD fixture can use `smoke.py` for interface development; it cannot
+produce an admitted checkpoint result without this evidence.
 
 `motion_challenge.adapters.ONNXController` supplies checked loading, named joint
 mapping and PD assembly. Other inference frameworks can implement the SDK

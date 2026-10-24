@@ -57,7 +57,7 @@
     0.0,
     0.02
   ],
-  "state_access": "privileged-state-v0",
+  "state_access": "ideal-proprioceptive-no-position-v1",
   "action_mode": "joint-pd-feedforward",
   "history_s": 0.0,
   "training_overlap": "unknown",

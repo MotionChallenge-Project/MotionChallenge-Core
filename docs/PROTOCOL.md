@@ -85,14 +85,13 @@ or differently configured shards cannot form a ranking. Outputs and copied
 traces remain outside repositories. Parallelization does not change policy or
 metric timing, reference data, or failure rules.
 
-## Status and limits
+## Verification and limits
 
-The CPU runner and inference process bridge are development implementations.
-Dataclasses and subprocesses are **not a hostile-code security sandbox**. Official
-acceptance still requires source/weight provenance, upstream inference parity,
-validated full-suite execution and a restricted container runner. Current outputs
-are labelled development/unverified and are not official leaderboard scores.
-The first state-access tier is privileged; it does not claim sensor-only deployment.
+Every controller uses the [proprioceptive observation contract](OBSERVATIONS.md).
+Acceptance requires exact checkpoint provenance, author-inference comparison,
+two complete repeatable evaluations and independent trajectory verification.
+Dataclasses and subprocesses are not a hostile-code security sandbox; a public
+submission also requires source review and a controlled rerun.
 
 No checkpoint retraining is required by the interface. Training overlap must be
 disclosed; inference-only testing does not imply an unseen dataset.
@@ -106,21 +105,16 @@ the compressed pose trace stored beside the external result. This checks
 consistency; an official service must still rerun the controller.
 
 
-## Early termination and full-motion evaluation
+## One evaluation result
 
-`uv run evaluate.py` stops each clip on its first tracking failure.
-`uv run evaluate.py --termination none` selects a separate frozen protocol and
-continues to the exact final timestamp, without resets or reference changes.
-Both modes retain the same failure predicates. Success means no failure at any
-metric sample, and completion is the uninterrupted fraction before the first
-failure. Later recovery does not erase a failure. Full-motion metrics include
-post-failure states; invalid numerics or inference errors invalidate the run.
+`uv run evaluate.py` runs each motion once through the exact final timestamp.
+The first failure determines success and completion. The same verified trajectory
+produces tracking errors both until that failure (inclusive) and over the entire
+motion. Later recovery does not erase a failure; no reset or reference shift is
+introduced. Inference errors and invalid numerics invalidate the run.
 
-The headline position metric is mean per-body position error (MPBPE): mean
-Euclidean error across 14 named body origins, averaged over time, then equally
-across clips. Reports show millimeters. Each rollout mode has three alignment
-views: no alignment, pelvis XY centering, and pelvis XY plus closest yaw. This
-gives six values per model; the three full-motion values require a fresh run.
-The compatibility JSON keys remain `mpjpe_*_m` and
-`metric_means_over_observed_prefix`; `metric_scope` identifies whether the
-observed trajectory is a failure prefix or the entire motion.
+MPBPE is the mean Euclidean error over 14 named body origins, averaged over time
+and then equally over clips. Each time range has three alignment views, giving
+six values in one `result.json`. The JSON keys retain `mpjpe_*_m` for compatibility;
+the website displays millimeters. `--termination early` and `--termination none`
+are diagnostic options, not separate ranking paths.

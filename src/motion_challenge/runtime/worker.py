@@ -7,13 +7,13 @@ from pathlib import Path
 import sys
 import traceback
 
-from motion_challenge.sdk import BodyState, ReferenceFrame, StatePacket, ProprioceptiveStatePacket
+from motion_challenge.sdk import BodyState, ReferenceFrame, ProprioceptiveStatePacket
 
 
 def packet(cls, data):
     data = dict(data)
-    if cls is StatePacket and 'schema' in data:
-        if data['schema'] != 'ideal-proprioceptive-no-position-v1':
+    if cls is ProprioceptiveStatePacket:
+        if data.get('schema') != 'ideal-proprioceptive-no-position-v1':
             raise ValueError('unknown state packet schema')
         data['joint_names'] = tuple(data['joint_names'])
         return ProprioceptiveStatePacket(**data)
@@ -43,7 +43,7 @@ def main():
             request = json.loads(line)
             if request['op'] == 'close':
                 break
-            state = packet(StatePacket, request['state'])
+            state = packet(ProprioceptiveStatePacket, request['state'])
             refs = tuple(packet(ReferenceFrame, f) for f in request['reference'])
             with contextlib.redirect_stdout(sys.stderr):
                 if request['op'] == 'reset':

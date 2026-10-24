@@ -3,22 +3,19 @@ from dataclasses import fields
 
 from motion_challenge.sdk import ProprioceptiveStatePacket
 
-PRIVILEGED = 'privileged-state-v0'
 PROPRIOCEPTIVE = 'ideal-proprioceptive-no-position-v1'
 
 
 def validate_access(protocol, runtime):
-    access = protocol.get('state_access', PRIVILEGED)
-    if access not in (PRIVILEGED, PROPRIOCEPTIVE):
-        raise ValueError('unknown observation access protocol')
-    if runtime.get('state_access', PRIVILEGED) != access:
+    access = protocol.get('state_access')
+    if access != PROPRIOCEPTIVE:
+        raise ValueError('protocol must declare ideal proprioception without position')
+    if runtime.get('state_access') != access:
         raise ValueError('controller state_access differs from frozen protocol')
     return access
 
 
 def controller_state(state, access):
-    if access == PRIVILEGED:
-        return state
     if access != PROPRIOCEPTIVE:
         raise ValueError('unknown observation access protocol')
     # Explicit allowlist: do not serialize the full packet and remove fields.

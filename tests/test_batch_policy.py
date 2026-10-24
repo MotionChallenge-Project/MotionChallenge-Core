@@ -46,14 +46,14 @@ def create_batch(root, config): return Batched(config)
                 manifest['files'].append({'path':path.name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
             (root/'suite.json').write_text(json.dumps(manifest))
             cfg = root/'runtime.json'
-            runtime = {'id':'test','adapter_root':str(root),'entrypoint':'adapter:create',
+            runtime = {'state_access':'ideal-proprioceptive-no-position-v1', 'id':'test','adapter_root':str(root),'entrypoint':'adapter:create',
                        'control_period_s':.013,'reference_offsets_s':[0.,.013],
                        'reference_history_s':0,'reference_preview_s':.013}
             env = dict(os.environ,PYTHONPATH=str(ROOT/'src'),OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')
             base = [sys.executable,'-m','motion_challenge.run','--controller',str(cfg),
                     '--suite',str(root/'suite.json'),'--data',str(root),
                     '--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
-                    '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-no-termination-v1.json')]
+                    '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json')]
             previous = None
             for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5)]:
                 if limit is not None:

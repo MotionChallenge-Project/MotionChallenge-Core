@@ -45,8 +45,8 @@ class StatePacket:
     root_linear_velocity_world_m_s: Vector
     root_angular_velocity_world_rad_s: Vector
     bodies: tuple[BodyState, ...] = ()
-    # Fixed public state schema v0 is explicitly privileged. Deployable/state
-    # access tiers must use separate packet schemas and result tracks later.
+    # Internal physics/scoring state; never sent to controller workers.
+    # Adapter FK may also construct this geometry container at a synthetic origin.
 
 
 @dataclass(frozen=True)
@@ -84,12 +84,12 @@ class ControlCommand:
 
 
 class Controller(Protocol):
-    def reset(self, initial_state: StatePacket,
+    def reset(self, initial_state: ProprioceptiveStatePacket,
               reference: tuple[ReferenceFrame, ...], seed: int) -> None:
         """Clear all histories/caches before each clip; no clip name is supplied."""
         ...
 
-    def act(self, state: StatePacket,
+    def act(self, state: ProprioceptiveStatePacket,
             reference: tuple[ReferenceFrame, ...]) -> ControlCommand:
         """No simulator handle, reset request, termination flag or score access."""
         ...
@@ -105,12 +105,12 @@ class BatchController(Protocol):
     slots. Return commands in the supplied order. No clip identity or score is
     exposed. Adapters own padding, model-specific microbatches and cache layout.
     """
-    def reset_batch(self, slots: tuple[int, ...], states: tuple[StatePacket, ...],
+    def reset_batch(self, slots: tuple[int, ...], states: tuple[ProprioceptiveStatePacket, ...],
                     references: tuple[tuple[ReferenceFrame, ...], ...],
                     seeds: tuple[int, ...]) -> None:
         ...
 
-    def act_batch(self, slots: tuple[int, ...], states: tuple[StatePacket, ...],
+    def act_batch(self, slots: tuple[int, ...], states: tuple[ProprioceptiveStatePacket, ...],
                   references: tuple[tuple[ReferenceFrame, ...], ...]
                   ) -> tuple[ControlCommand, ...]:
         ...

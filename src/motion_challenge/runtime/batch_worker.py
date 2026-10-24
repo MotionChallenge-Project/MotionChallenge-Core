@@ -13,7 +13,7 @@ import time
 
 from motion_challenge.runtime.encoding import RequestEncoder
 from motion_challenge.runtime.worker import load_controller, packet
-from motion_challenge.sdk import ControlCommand, StatePacket, ReferenceFrame
+from motion_challenge.sdk import ControlCommand, ProprioceptiveStatePacket, ReferenceFrame
 
 MAX_MESSAGE = 16 * 1024 * 1024
 
@@ -100,7 +100,7 @@ def serve(config, address, size):
                     for start in range(0, len(requests), limit):
                         chunk = requests[start:start + limit]
                         slots = tuple(connections[c] for c, _ in chunk)
-                        states = tuple(packet(StatePacket, r['state']) for _, r in chunk)
+                        states = tuple(packet(ProprioceptiveStatePacket, r['state']) for _, r in chunk)
                         references = tuple(tuple(packet(ReferenceFrame, f) for f in r['reference']) for _, r in chunk)
                         with contextlib.redirect_stdout(sys.stderr):
                             if op == 'reset':

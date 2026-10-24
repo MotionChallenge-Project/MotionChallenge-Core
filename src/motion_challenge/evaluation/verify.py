@@ -131,7 +131,7 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
     protocol = json.loads(Path(protocol_path).read_text())
     from motion_challenge.runtime.observations import validate_access
     access = validate_access(protocol, json.loads(Path(controller_path).read_text()))
-    if result.get('state_access', 'privileged-state-v0') != access:
+    if result.get('state_access') != access:
         raise ValueError('recorded observation access differs from protocol')
     terminate_on_failure = protocol.get('terminate_on_failure', True)
     if not isinstance(terminate_on_failure, bool):

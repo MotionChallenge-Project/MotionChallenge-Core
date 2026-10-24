@@ -64,7 +64,7 @@ class PairedRunTests(unittest.TestCase):
                 self.assertEqual(runtime['weights_sha256'],'fixed')
                 for scope, filename in [('early','prefix-result.json'), ('none','result.json')]:
                     clip={'id':'motion','success':False,'duration_s':2.,'completion':.5,'failure_time_s':1.,'failure_reasons':['height'], 'sample_count':50 if scope=='early' else 100,'metric_means_over_observed_prefix':{'error':1 if scope=='early' else 10}}
-                    (dest/filename).write_text(json.dumps({'controller_id':'test','controller_config_sha256':'same','suite_sha256':'same','robot_profile_sha256':'same','mujoco_version':'3.17.0','backend':'batch','clips':[clip],'success_count':0,'macro_completion':.5,
+                    (dest/filename).write_text(json.dumps({'state_access':'ideal-proprioceptive-no-position-v1','controller_id':'test','controller_config_sha256':'same','suite_sha256':'same','robot_profile_sha256':'same','mujoco_version':'3.17.0','backend':'batch','clips':[clip],'success_count':0,'macro_completion':.5,
                         'macro_metrics_over_observed_prefix':clip['metric_means_over_observed_prefix']}))
                 (dest/'receipt.json').write_text(json.dumps({'status':'trace_verified'}))
                 return {'status':'trace_verified'}

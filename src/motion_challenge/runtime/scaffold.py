@@ -62,7 +62,7 @@ def create_project(destination,core_path):
     (destination/'smoke.py').write_text(SMOKE)
     (destination/'evaluate.py').write_text('from pathlib import Path\nfrom motion_challenge.entrypoint import main\n\nif __name__ == "__main__":\n    main(Path(__file__).parent)\n')
     runtime={'id':'reference-pd-interface-fixture','entrypoint':'adapter:create','control_period_s':.02,
-             'reference_offsets_s':[0.],'reference_history_s':0.,'reference_preview_s':0.,'state_access':'privileged-state-v0',
+             'reference_offsets_s':[0.],'reference_history_s':0.,'reference_preview_s':0.,'state_access':'ideal-proprioceptive-no-position-v1',
              'action_mode':'joint-pd-feedforward','official':False,'is_trained_checkpoint':False}
     (destination/'runtime.json').write_text(json.dumps(runtime,indent=2)+'\n')
     return {'project':str(destination),'dependency':dependency,'next':'uv sync; uv run python smoke.py --data-cache EXTERNAL_CACHE --output EXTERNAL_RESULT --fetch'}

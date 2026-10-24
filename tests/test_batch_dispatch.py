@@ -27,13 +27,13 @@ def create(root, config): return Policy(config.get('fail',False))
                 path.write_text(row*(i+2))
                 manifest['files'].append({'path':path.name, 'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
             (root/'suite.json').write_text(json.dumps(manifest))
-            runtime = {'id':'test-policy','adapter_root':str(root),'entrypoint':'adapter:create',
+            runtime = {'state_access':'ideal-proprioceptive-no-position-v1', 'id':'test-policy','adapter_root':str(root),'entrypoint':'adapter:create',
                        'control_period_s':.013,'reference_offsets_s':[0.,.013],
                        'reference_history_s':0,'reference_preview_s':.013}
             cfg = root/'runtime.json';cfg.write_text(json.dumps(runtime))
             command = [sys.executable,'-m','motion_challenge.run','--controller',str(cfg),
                        '--suite',str(root/'suite.json'),'--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
-                       '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-v1.json'),
+                       '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v1.json'),
                        '--data',str(root),'--batch-size','2']
             env = dict(os.environ, PYTHONPATH=str(ROOT/'src'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
             for mode in ('serial','batch'):

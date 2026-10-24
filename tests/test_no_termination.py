@@ -35,10 +35,10 @@ class NoTerminationTests(unittest.TestCase):
             manifest['files'] = [{'path':source.name,'sha256':sha256_file(source)}]
             suite = root/'suite.json'; suite.write_text(json.dumps(manifest))
             motion = load_csv_motion(source,manifest['joint_names'],manifest['source_fps'])
-            protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-no-termination-v1.json').read_text())
+            protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json').read_text())
             protocol['failure']['anchor_height_m'] = 1e-6
             config = root/'protocol.json'; config.write_text(json.dumps(protocol))
-            runtime = {'control_period_s':.02,'reference_offsets_s':[0.]}
+            runtime = {'state_access':'ideal-proprioceptive-no-position-v1', 'control_period_s':.02,'reference_offsets_s':[0.]}
             controller = root/'runtime.json'; controller.write_text(json.dumps(runtime))
             def run(world, spec):
                 trace = io.StringIO()
@@ -66,7 +66,7 @@ class NoTerminationTests(unittest.TestCase):
             trace_path = root/'poses.jsonl.gz'
             with gzip.open(trace_path,'wt') as f:f.write(trace)
             full.update(id=source.name,trace={'path':trace_path.name,'sha256':sha256_file(trace_path)})
-            result = dict(status='completed',full_suite=True,mujoco_version=__import__('mujoco').__version__,
+            result = dict(state_access='ideal-proprioceptive-no-position-v1',status='completed',full_suite=True,mujoco_version=__import__('mujoco').__version__,
                 termination_mode='no_termination',clips=[full],success_count=0,macro_completion=full['completion'],
                 macro_metrics_over_observed_prefix=full['metric_means_over_observed_prefix'],
                 suite_sha256=sha256_file(suite),robot_profile_sha256=sha256_file(PROFILE),

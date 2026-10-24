@@ -1,9 +1,8 @@
 # Observation admission
 
-The **ideal-proprioceptive-no-position-v1** contract is frozen. LAFAN40 uses a
-separate `ideal-proprioception` track; existing privileged-state results retain
-their original protocol and scores. Physics, references, initialization, failure
-conditions, metric clocks and all six MPBPE views are unchanged.
+All evaluations use the frozen **ideal-proprioceptive-no-position-v1** contract.
+The Core supplies only the permitted state fields below. The scorer privately
+retains full state for failure checks and metrics.
 
 ## Allowed controller inputs
 
@@ -43,8 +42,7 @@ without such evidence does not establish admission.
 Admission requires source review, forbidden-input dependency tests, comparison
 of observation tensors and motor targets with the supported author inference
 path, and new complete independently verified evaluations. An unverified path
-remains pending; a checkpoint requiring forbidden information is excluded from
-this track, not declared intrinsically incapable. Old scores are not copied.
+remains pending; a checkpoint requiring forbidden information is not admitted, without a claim about its intrinsic capability.
 
 Core removes prohibited fields before sending reset/act packets to either
 single-controller or batched inference workers. `ProprioceptiveStatePacket` is

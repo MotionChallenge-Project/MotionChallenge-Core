@@ -11,18 +11,10 @@ cd MotionChallenge-Core
 uv sync
 ```
 
-Use a model repository to run its checkpoint. Each adapter pins this core as the
-root-level `MotionChallenge-Core` submodule and provides `uv run evaluate.py`.
-One command runs each complete motion once with MuJoCo 3.17 CPU batch
-(`--jobs 8`). It records the first failure, continues to the final frame, and
-computes both time ranges from the same verified trajectory. A unified
-`result.json` contains success, completion, all six body-error views and one
-source record. `rollout/` retains pose traces and verification evidence;
-`summary.json` records progress. Downloads and evaluation report every five
-seconds. `--termination early` and `--termination none` remain diagnostic options.
-`--jobs` controls CPU rollout slots and independent trace verification workers.
+Run a checkpoint from a demo adapter with `uv run evaluate.py`.
+Each adapter pins `MotionChallenge-Core` and produces verified results using the shared protocol.
 
-## Model adapters
+## Demo Model adapters
 
 | Model | Repository |
 | :-- | :-- |

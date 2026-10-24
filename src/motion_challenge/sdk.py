@@ -77,3 +77,24 @@ class Controller(Protocol):
 
     def close(self) -> None:
         ...
+
+
+class BatchController(Protocol):
+    """Optional adapter interface; slot IDs identify independent controller state.
+
+    Calls may contain any nonempty subset, in any order. Reset only the supplied
+    slots. Return commands in the supplied order. No clip identity or score is
+    exposed. Adapters own padding, model-specific microbatches and cache layout.
+    """
+    def reset_batch(self, slots: tuple[int, ...], states: tuple[StatePacket, ...],
+                    references: tuple[tuple[ReferenceFrame, ...], ...],
+                    seeds: tuple[int, ...]) -> None:
+        ...
+
+    def act_batch(self, slots: tuple[int, ...], states: tuple[StatePacket, ...],
+                  references: tuple[tuple[ReferenceFrame, ...], ...]
+                  ) -> tuple[ControlCommand, ...]:
+        ...
+
+    def close(self) -> None:
+        ...

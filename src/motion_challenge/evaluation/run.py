@@ -4,7 +4,6 @@ Outputs are explicitly unverified development records until deployment isolation
 upstream inference parity and the complete protocol are independently reviewed.
 """
 import argparse
-from dataclasses import asdict
 import gzip
 import json
 import math
@@ -17,6 +16,7 @@ import time
 import threading
 
 from motion_challenge.runtime.progress import Progress
+from motion_challenge.runtime.encoding import RequestEncoder
 
 from motion_challenge.data.dataset import load_csv_motion
 from motion_challenge.simulation.physics import World, tracking_sample
@@ -28,6 +28,7 @@ class Worker:
     def __init__(self, config_path, logfile, timeout=120, python_executable=None):
         self.log = open(logfile, 'w')
         self.timeout = timeout
+        self.encoder = RequestEncoder()
         env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
         self.process = subprocess.Popen([python_executable or sys.executable, '-m', 'motion_challenge.runtime.worker', str(config_path)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log, text=True, bufsize=1, env=env)
@@ -52,8 +53,7 @@ class Worker:
         return result
 
     def call(self, op, state, reference, seed=0):
-        self.process.stdin.write(json.dumps({'op': op, 'state': asdict(state),
-            'reference': [asdict(f) for f in reference], 'seed': seed}, allow_nan=False)+'\n')
+        self.process.stdin.write(self.encoder.request(op, state, reference, seed))
         self.process.stdin.flush()
         result = self._read()
         return ControlCommand(**result['command']) if op == 'act' else None
@@ -141,6 +141,7 @@ def main():
     p.add_argument('--backend', choices=['batch', 'serial', 'batch-client'], default='batch')
     p.add_argument('--batch-address', help=argparse.SUPPRESS)
     p.add_argument('--batch-slot', type=int, help=argparse.SUPPRESS)
+    p.add_argument('--policy-batch-address', help=argparse.SUPPRESS)
     p.add_argument('--batch-size', type=int, default=8)
     p.add_argument('--threads', type=int)
     p.add_argument('--progress-interval', type=float, default=5.0)
@@ -197,8 +198,12 @@ def main():
                           passed=sum(c['success'] for c in results['clips']), active=dict(active),
                           backend=a.backend)
     def evaluate_slot(slot, world):
-        worker = Worker(a.controller.resolve(), a.output.with_suffix(f'.worker{slot:02d}.log'),
-                        python_executable=a.worker_python)
+        if a.policy_batch_address:
+            from motion_challenge.runtime.batch_worker import BatchClient
+            worker = BatchClient(a.policy_batch_address, a.batch_slot)
+        else:
+            worker = Worker(a.controller.resolve(), a.output.with_suffix(f'.worker{slot:02d}.log'),
+                            python_executable=a.worker_python)
         try:
             while True:
                 with lock:

@@ -60,6 +60,7 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
     results['batch_threads'] = pool.batch.nthread
     results['execution'] = 'multiprocess_reference_policy_scoring_shared_mujoco_batch'
     records, processes, connections = [], [], {}
+    policy_process, policy_log = None, None
     log_threads = []
     states = {}
     def log_output(slot, process, path):
@@ -86,6 +87,17 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
         socket_root = '/tmp' if sys.platform == 'darwin' else None
         with tempfile.TemporaryDirectory(prefix='mc-batch-', dir=socket_root) as directory:
             address = str(Path(directory)/'physics.sock')
+            runtime = json.loads(args.controller.read_text())
+            policy_address = None
+            if runtime.get('batch_entrypoint'):
+                policy_address = str(Path(directory)/'policy.sock')
+                policy_log = args.output.with_suffix('.batch-worker.log').open('w')
+                policy_process = subprocess.Popen(
+                    [args.worker_python or sys.executable, '-m', 'motion_challenge.runtime.batch_worker',
+                     str(args.controller.resolve()), policy_address, str(size)],
+                    stdout=policy_log, stderr=subprocess.STDOUT,
+                    env=dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1'))
+                results['policy_execution'] = 'adapter_batch_entrypoint'
             with Listener(address, family='AF_UNIX', backlog=size) as listener:
                 # A crashed child must not leave the coordinator in accept().
                 listener._listener._socket.settimeout(1)
@@ -103,6 +115,8 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                         command += ['--max-duration', str(args.max_duration)]
                     if args.worker_python:
                         command += ['--worker-python', args.worker_python]
+                    if policy_address:
+                        command += ['--policy-batch-address', policy_address]
                     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                                text=True, bufsize=1,
                                                env=dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1'))
@@ -130,6 +144,8 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                     connections[connection] = slot
                 pending = {}
                 while connections:
+                    if policy_process is not None and policy_process.poll() not in (None, 0):
+                        raise RuntimeError('batch adapter exited; see batch-worker log')
                     ready = wait([c for c in connections if connections[c] not in pending], timeout=1)
                     if not ready and any(p.poll() not in (None, 0) for p in processes):
                         raise RuntimeError('batch slot process failed; see part logs')
@@ -155,6 +171,8 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                 for process in processes:
                     if process.wait(timeout=30):
                         raise RuntimeError('batch slot failed after simulation')
+                if policy_process is not None and policy_process.wait(timeout=30):
+                    raise RuntimeError('batch adapter failed; see batch-worker log')
         for thread in log_threads:
             thread.join(timeout=5)
         parts = [json.loads(path.read_text()) for path in records]
@@ -186,4 +204,13 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                 process.wait()
         raise
     finally:
+        if policy_process is not None and policy_process.poll() is None:
+            policy_process.terminate()
+            try:
+                policy_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                policy_process.kill()
+                policy_process.wait()
+        if policy_log is not None:
+            policy_log.close()
         args.output.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')

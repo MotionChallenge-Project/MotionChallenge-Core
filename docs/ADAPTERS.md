@@ -72,6 +72,34 @@ Keep model-specific extensions behind this factory: additional networks,
 history/caches, observation transforms, filters and control conversions require
 no Core edits. See [the code layout and ownership boundaries](ARCHITECTURE.md).
 
+### Optional batched inference
+
+`--jobs N` accepts any positive parallel slot count, limited by the available
+motions. Existing `reset/act/close` adapters need no changes. The core caches
+immutable reference encoding and runs their independent policy workers.
+
+For a model that benefits from batched inference, declare
+`"batch_entrypoint": "adapter:create_batch"` in `runtime.json`. Its factory
+returns a `motion_challenge.sdk.BatchController` implementing:
+
+```python
+reset_batch(slots, states, references, seeds)
+act_batch(slots, states, references)  # one ControlCommand per supplied slot
+close()
+```
+
+Each call may contain any nonempty subset of slots. Keep histories and recurrent
+state separate per slot; reset only the supplied slots. Commands use the same
+order as `slots`. The optional positive `inference_batch_size` caps each call
+independently of `--jobs`; tail batches may be smaller. Fixed-shape models can
+pad, split or execute individually inside their adapter, preserving author
+semantics. Specialized runtimes and devices belong in the adapter's dependencies.
+
+The core owns scheduling and sends the same state/reference packets as the
+single-slot interface. Model workers cannot request different physics, clocks,
+failure rules or metrics. Compare batched outputs against independent inference
+over resets, partial batches and long sequences before enabling this path.
+
 ## Admission review
 
 Pin the author's source revision and checkpoint. Review joint order, units,

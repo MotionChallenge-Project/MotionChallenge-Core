@@ -18,17 +18,21 @@ def packet(cls, data):
     return cls(**data)
 
 
-def main():
-    cfg = json.loads(Path(sys.argv[1]).read_text())
-    root = Path(cfg.get('adapter_root', Path(sys.argv[1]).resolve().parent)).resolve()
+def load_controller(config_path, entrypoint='entrypoint'):
+    cfg = json.loads(Path(config_path).read_text())
+    root = Path(cfg.get('adapter_root', Path(config_path).resolve().parent)).resolve()
     sys.path.insert(0, str(root))
     for path in cfg.get('python_paths', []):
         sys.path.insert(0, str((root/path).resolve()))
+    module, factory = cfg[entrypoint].split(':')
+    return getattr(importlib.import_module(module), factory)(root, cfg)
+
+
+def main():
     controller = None
     try:
         with contextlib.redirect_stdout(sys.stderr):
-            module, factory = cfg['entrypoint'].split(':')
-            controller = getattr(importlib.import_module(module), factory)(root, cfg)
+            controller = load_controller(sys.argv[1])
         print(json.dumps({'ready': True}), flush=True)
         for line in sys.stdin:
             request = json.loads(line)

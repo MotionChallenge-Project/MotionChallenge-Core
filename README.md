@@ -22,6 +22,18 @@ source record. `rollout/` retains pose traces and verification evidence;
 seconds. `--termination early` and `--termination none` remain diagnostic options.
 `--jobs` controls CPU rollout slots and independent trace verification workers.
 
+## Model adapters
+
+| Model | Repository |
+| :-- | :-- |
+| GRIT | [motion-challenge-grit](https://github.com/MotionChallenge-Project/motion-challenge-grit) |
+| SONIC v1.1 | [motion-challenge-sonic-v1-1](https://github.com/MotionChallenge/motion-challenge-sonic-v1-1) |
+| HoloMotion v1.4.1 | [motion-challenge-holomotion-v1-4-1](https://github.com/MotionChallenge/motion-challenge-holomotion-v1-4-1) |
+| PMT Flat | [motion-challenge-pmt-flat](https://github.com/MotionChallenge/motion-challenge-pmt-flat) |
+
+Clone an adapter with `--recurse-submodules`, then run `uv sync` and
+`uv run evaluate.py`.
+
 ## Evaluation
 
 Full-motion success, completion, joint error, and body-position error with

@@ -1,11 +1,11 @@
 # Integrate a controller
 
-Each model is an independent repository. The root-level `motion-challenge`
+Each model is an independent repository. The root-level `MotionChallenge-Core`
 submodule pins the shared kernel; no second adapter framework is needed.
 
 ```text
 motion-challenge-your-model/
-  motion-challenge/       # Git submodule, exact core commit
+  MotionChallenge-Core/  # Git submodule, exact core commit
   adapter.py             # model inference only
   runtime.json           # clocks, input access, checkpoint/config hashes
   policy.json            # native model configuration
@@ -32,7 +32,7 @@ from motion_challenge.entrypoint import main
 main(Path(__file__).parent)
 ```
 
-Declare `motion-challenge = {path = "motion-challenge", editable = true}` in
+Declare `motion-challenge = {path = "MotionChallenge-Core", editable = true}` in
 `[tool.uv.sources]`. Commit the submodule pointer and `uv.lock`. For a new adapter,
 `motion-challenge init-adapter --core-path CORE_CHECKOUT --output NEW_DIRECTORY`
 creates a separate reference-PD interface fixture with the same layout. It is

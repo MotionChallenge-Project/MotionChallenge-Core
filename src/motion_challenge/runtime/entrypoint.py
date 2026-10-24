@@ -61,7 +61,11 @@ def source_snapshot(root):
              if name and (root/name).is_file() and name != 'motion-challenge'}
     def git(*args):
         return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
-    core = root/'motion-challenge'
+    cores = [root/name for name in ('MotionChallenge-Core', 'motion-challenge')
+             if (root/name).is_dir()]
+    if len(cores) != 1:
+        raise ValueError('Expected one core submodule: MotionChallenge-Core (or legacy motion-challenge)')
+    core = cores[0]
     return {'adapter_commit': git('rev-parse', 'HEAD'),
             'adapter_dirty': bool(git('status', '--porcelain', '--untracked-files=normal')),
             'tracked_files_sha256': files,

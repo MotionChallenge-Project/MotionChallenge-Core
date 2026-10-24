@@ -52,9 +52,9 @@ def create_project(destination,core_path):
     if destination.exists() and any(destination.iterdir()):raise ValueError('destination must be absent or empty')
     destination.mkdir(parents=True,exist_ok=True)
     subprocess.run(['git','init','-b','main',str(destination)],check=True,capture_output=True)
-    subprocess.run(['git','-C',str(destination),'-c','protocol.file.allow=always','submodule','add',str(core_path),'motion-challenge'],check=True,capture_output=True)
-    subprocess.run(['git','-C',str(destination),'config','-f','.gitmodules','submodule.motion-challenge.url','https://github.com/MotionChallenge-Project/MotionChallenge-Core.git'],check=True)
-    dependency='motion-challenge'
+    subprocess.run(['git','-C',str(destination),'-c','protocol.file.allow=always','submodule','add',str(core_path),'MotionChallenge-Core'],check=True,capture_output=True)
+    subprocess.run(['git','-C',str(destination),'config','-f','.gitmodules','submodule.MotionChallenge-Core.url','https://github.com/MotionChallenge-Project/MotionChallenge-Core.git'],check=True)
+    dependency='MotionChallenge-Core'
     (destination/'pyproject.toml').write_text('[project]\nname = "motion-challenge-consumer"\nversion = "0.0.1"\nrequires-python = ">=3.12,<3.13"\ndependencies = ["motion-challenge"]\n\n[tool.uv.sources]\nmotion-challenge = {path = '+json.dumps(dependency)+', editable = true}\n')
     (destination/'.python-version').write_text('3.12\n')
     (destination/'.gitignore').write_text('.venv/\n__pycache__/\n*.pyc\n')

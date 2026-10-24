@@ -12,7 +12,7 @@ uv sync
 ```
 
 Use a model repository to run its checkpoint. Each adapter pins this core as the
-root-level `motion-challenge` submodule and provides `uv run evaluate.py`.
+root-level `MotionChallenge-Core` submodule and provides `uv run evaluate.py`.
 One command runs each complete motion once with MuJoCo 3.17 CPU batch
 (`--jobs 8`). It records the first failure, continues to the final frame, and
 computes both time ranges from the same verified trajectory. A unified

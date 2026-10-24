@@ -3,10 +3,11 @@ import json
 from types import SimpleNamespace
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 
-from motion_challenge.entrypoint import artifact, resolve_artifacts, run_pair
+from motion_challenge.entrypoint import artifact, resolve_artifacts, run_pair, source_snapshot
 
 
 class ArtifactTests(unittest.TestCase):
@@ -89,3 +90,34 @@ class PairedRunTests(unittest.TestCase):
             summary=json.loads((output/'summary.json').read_text())
             self.assertEqual(summary['status'],'error')
             self.assertFalse((output/'result.json').exists())
+
+
+class SourceLayoutTests(unittest.TestCase):
+    def init_repo(self, path):
+        path.mkdir(parents=True, exist_ok=True)
+        subprocess.run(['git', 'init', '-q', str(path)], check=True)
+        (path/'fixture.txt').write_text('source fixture')
+        subprocess.run(['git', '-C', str(path), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(path), '-c', 'user.name=Fixture',
+                        '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture'], check=True)
+        return subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'], text=True).strip()
+
+    def test_core_identity_and_dirty_state_in_both_layouts(self):
+        for name in ('MotionChallenge-Core', 'motion-challenge'):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root=Path(directory)/'adapter';self.init_repo(root)
+                core=root/name;revision=self.init_repo(core)
+                self.assertEqual(source_snapshot(root)['core_commit'], revision)
+                self.assertFalse(source_snapshot(root)['core_dirty'])
+                (core/'fixture.txt').write_text('changed core')
+                self.assertTrue(source_snapshot(root)['core_dirty'])
+
+    def test_ambiguous_or_missing_core_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);self.init_repo(root)
+            with self.assertRaisesRegex(ValueError, 'one core submodule'):
+                source_snapshot(root)
+            for name in ('MotionChallenge-Core', 'motion-challenge'):
+                self.init_repo(root/name)
+            with self.assertRaisesRegex(ValueError, 'one core submodule'):
+                source_snapshot(root)

@@ -4,7 +4,7 @@ Each model is an independent repository. The root-level `MotionChallenge-Core`
 submodule pins the shared kernel; no second adapter framework is needed.
 
 ```text
-motion-challenge-your-model/
+MotionChallenge-your-model/
   MotionChallenge-Core/  # Git submodule, exact core commit
   adapter.py             # model inference only
   runtime.json           # clocks, input access, checkpoint/config hashes
@@ -18,8 +18,8 @@ motion-challenge-your-model/
 ## Install and evaluate
 
 ```sh
-git clone --recurse-submodules https://github.com/OWNER/motion-challenge-your-model.git
-cd motion-challenge-your-model
+git clone --recurse-submodules https://github.com/OWNER/MotionChallenge-your-model.git
+cd MotionChallenge-your-model
 uv sync
 uv run evaluate.py
 ```

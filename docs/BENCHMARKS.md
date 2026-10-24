@@ -12,7 +12,7 @@ formats are not automatically supported.
 
 ```text
 another-benchmark/
-  motion-challenge/       # shared core Git submodule
+  MotionChallenge-Core/  # shared core Git submodule
   pyproject.toml          # local path dependency on that submodule
   uv.lock
   dataset.json           # immutable source revision, files, hashes, joint names

@@ -8,7 +8,7 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from motion_challenge.evaluation.batch_metrics import tracking_batch
+from motion_challenge.evaluation.batch_metrics import tracking_batch, gravity_z
 from motion_challenge.sdk import BodyState, StatePacket, ReferenceFrame
 from motion_challenge.simulation.physics import World, forward_kinematics, tracking_sample
 
@@ -47,6 +47,16 @@ class BatchMetricTests(unittest.TestCase):
                 state = replace(states[0], bodies=tuple(replace(b,position_world_m=(b.position_world_m[0],b.position_world_m[1],
                     b.position_world_m[2]+protocol['failure'][key]+epsilon)) if b.name==body else b for b in ref.bodies))
                 self.assertEqual(tracking_batch([state],[ref],protocol)[0][0],tracking_sample(state,ref,protocol)[0])
+
+    def test_array_gravity_preserves_threshold_decisions(self):
+        threshold = .8
+        angles = np.arccos(1-np.array([np.nextafter(threshold,0),threshold,np.nextafter(threshold,1)]))
+        q = Rotation.from_euler('x',angles).as_quat()
+        expected = Rotation.from_quat(q).inv().apply((0.,0.,-1.))[:,2]
+        np.testing.assert_array_equal(np.abs(gravity_z(q)+1)>threshold,np.abs(expected+1)>threshold)
+        rng = np.random.default_rng(164)
+        q = Rotation.random(4096,random_state=rng).as_quat()*rng.uniform(.5,2,(4096,1))
+        np.testing.assert_allclose(gravity_z(q),Rotation.from_quat(q).inv().apply((0.,0.,-1.))[:,2],rtol=0,atol=8e-16)
 
     def test_body_origin_velocities_match_jacobians(self):
         world = World(ROOT/'robots/g1-29dof-cpu-v0.json')

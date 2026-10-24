@@ -34,7 +34,8 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
         raise ValueError('reference_bodies requires an array adapter and a list of body names')
     pool = VectorPhysics(args.robot,size,args.threads,set(score_names),requested_bodies)
     offsets = np.asarray(runtime['reference_offsets_s'])
-    refs = ArrayReferences(pool,size,len(offsets)+1)
+    refs = ArrayReferences(pool,size,len(offsets)+1,
+        (runtime['control_period_s'],protocol['metric_period_s']),offsets)
     actual_columns = [pool.body_names.index(n) for n in score_names]
     ref_columns = [refs.body_names.index(n) for n in score_names]
     writer = None if getattr(args,'no_traces',False) else ArrayTraceWriter()

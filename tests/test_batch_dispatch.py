@@ -44,8 +44,16 @@ def create(root, config): return Policy(config.get('fail',False))
             serial = json.loads((root/'serial.json').read_text());batch = json.loads((root/'batch.json').read_text())
             for a,b in zip(serial['clips'],batch['clips']):
                 self.assertEqual(gzip.open(root/a['trace']['path'],'rt').read(),gzip.open(root/b['trace']['path'],'rt').read())
-                for key in a:
-                    if key not in ('wall_time_s','trace'): self.assertEqual(a[key],b[key])
+                for left,right in ((a,b),(a['metric_prefix'],b['metric_prefix'])):
+                    for key in left:
+                        if key in ('metric_means_over_observed_prefix','last_sample'):
+                            # NumPy/SciPy may round differently; trajectory and
+                            # failure boundaries remain exactly equal.
+                            self.assertEqual(left[key].keys(),right[key].keys())
+                            for metric in left[key]:
+                                self.assertAlmostEqual(left[key][metric],right[key][metric],delta=4e-15)
+                        elif key not in ('wall_time_s','trace','metric_prefix'):
+                            self.assertEqual(left[key],right[key])
             runtime['fail'] = True;cfg.write_text(json.dumps(runtime))
             result = subprocess.run(command+['--backend','batch','--output',str(root/'error.json')],
                                     env=env,capture_output=True,text=True,timeout=40)

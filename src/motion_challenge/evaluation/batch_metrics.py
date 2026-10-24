@@ -1,10 +1,6 @@
 """Vectorized scoring; the scalar verifier remains an independent implementation."""
-import math
-
 import numpy as np
-from scipy.spatial.transform import Rotation
 
-from motion_challenge.data.reference import normalize_quaternion
 from motion_challenge.data.bodies import body_values
 from motion_challenge.data.array_reference import normalized
 from motion_challenge.evaluation.alignment import POSITION_ALIGNMENT_VERSION
@@ -27,11 +23,24 @@ def tracking_batch(states, references, protocol):
              {key:float(value[i]) for key,value in metrics.items()}) for i,row in enumerate(failure)]
 
 
+def relative_quaternion(reference, actual):
+    """reference * inverse(actual), XYZW; arrays normalized once at the boundary."""
+    x,y,z,w = reference.T
+    a,b,c,d = actual.T
+    return normalized(np.column_stack((w*(-a)+x*d-y*c+z*b,
+        w*(-b)+y*d-z*a+x*c, w*(-c)+z*d-x*b+y*a, w*d+x*a+y*b+z*c)))
+
+
+def gravity_z(quaternion):
+    x,y,z,w = normalized(quaternion).T
+    return -((-x*x-y*y)+z*z+w*w)
+
+
 def tracking_arrays(actual, desired, joints, ref_joints, ar, rr, aq, rq, protocol):
     cfg = protocol['failure']
     height = np.abs(actual[:,0,2]-desired[:,0,2])
-    gravity = np.abs(Rotation.from_quat(actual[:,0,3:7]).inv().apply((0,0,-1))[:,2]
-                     -Rotation.from_quat(desired[:,0,3:7]).inv().apply((0,0,-1))[:,2])
+    gravity = np.abs(gravity_z(actual[:,0,3:7])-gravity_z(desired[:,0,3:7]))
+    relative = relative_quaternion(normalized(rq),normalized(aq))
     offset = 1+len(cfg['end_effector_bodies'])
     ee = np.max(np.abs(actual[:,1:offset,2]-desired[:,1:offset,2]),axis=1)
     ap,rp = actual[:,offset:,:3],desired[:,offset:,:3]
@@ -39,7 +48,7 @@ def tracking_arrays(actual, desired, joints, ref_joints, ar, rr, aq, rq, protoco
     metrics = {
         'joint_mae_rad': np.abs(joints-ref_joints).mean(axis=1),
         'root_position_error_m': np.linalg.norm(ar-rr,axis=1),
-        'root_orientation_error_rad': (Rotation.from_quat(rq).inv()*Rotation.from_quat(aq)).magnitude(),
+        'root_orientation_error_rad': 2*np.arctan2(np.linalg.norm(relative[:,:3],axis=1),np.abs(relative[:,3])),
         'mpjpe_world_m': mean_distance(ap,rp),
         'mpjpe_root_relative_world_axes_m': mean_distance(ap-ar[:,None,:],rp-rr[:,None,:]),
         'anchor_height_error_m': height,
@@ -51,18 +60,18 @@ def tracking_arrays(actual, desired, joints, ref_joints, ar, rr, aq, rq, protoco
         if alignment != POSITION_ALIGNMENT_VERSION:
             raise ValueError('unsupported position alignment metric version')
         # Match the frozen scalar normalization and closest-heading convention.
-        arot = Rotation.from_quat(normalized(aq))
-        rrot = Rotation.from_quat(normalized(rq))
-        relative = (rrot*arot.inv()).as_matrix()
-        cosine = relative[:,0,0]+relative[:,1,1]
-        sine = relative[:,1,0]-relative[:,0,1]
+        x,y,z,w = relative.T
+        xx,yy,zz,ww = x*x,y*y,z*z,w*w
+        cosine = (xx-yy-zz+ww)+(-xx+yy-zz+ww)
+        sine = 4*z*w
         degenerate = np.hypot(cosine,sine)<=1e-12
         angle = np.where(degenerate,0.,np.arctan2(sine,cosine))
-        rotation_vector = np.zeros((len(actual),3));rotation_vector[:,2] = angle
-        yaw = Rotation.from_rotvec(rotation_vector).as_matrix()
         ax,rx = ap.copy(),rp.copy()
         ax[:,:,:2] -= ar[:,None,:2];rx[:,:,:2] -= rr[:,None,:2]
-        aligned = np.einsum('nij,nkj->nki',yaw,ax)
+        c,s = np.cos(angle)[:,None],np.sin(angle)[:,None]
+        aligned = ax.copy()
+        aligned[:,:,0] = c*ax[:,:,0]-s*ax[:,:,1]
+        aligned[:,:,1] = s*ax[:,:,0]+c*ax[:,:,1]
         metrics.update(mpjpe_xy_aligned_m=mean_distance(ax,rx),
             mpjpe_xy_yaw_aligned_m=mean_distance(aligned,rx),
             root_xy_error_m=np.linalg.norm(ar[:,:2]-rr[:,:2],axis=1),

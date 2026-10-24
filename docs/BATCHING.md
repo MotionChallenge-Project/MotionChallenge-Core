@@ -84,6 +84,9 @@ The control loop processes state, reference interpolation, FK and scores as
 arrays across slots. Physics substeps update PD torques and advance MuJoCo;
 body snapshots are computed only at control/metric ticks in a separate native
 batch. Loading/reset initialization and finished-clip reports remain per clip.
+Regular reference clocks use a bounded time-indexed cache; the exact endpoint is
+cached separately. Irregular queries remain supported. PD arrays are reused
+across substeps, and scoring uses batched quaternion arithmetic.
 JSON/gzip runs on one bounded output worker, outside the control loop.
 
 Execution records include actual slots, physics threads and phase timings. A

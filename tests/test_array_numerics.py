@@ -63,6 +63,32 @@ class ArrayNumericsTests(unittest.TestCase):
                         np.testing.assert_allclose(result.body_position_world_m[row,col],r.bodies.values[:,:3],rtol=0,atol=3e-14)
                         np.testing.assert_allclose(result.body_linear_velocity_world_m_s[row,col],r.bodies.values[:,7:10],rtol=0,atol=5e-11)
 
+    def test_clock_cache_reuses_frames_and_preserves_exact_endpoint(self):
+        pool = VectorPhysics(ROOT/'robots/g1-29dof-cpu-v0.json',3,2)
+        offsets = np.array([-.04,0.,.04,.06,.10,.14,.16,.20,.24,.26])
+        refs = ArrayReferences(pool,3,len(offsets)+1,(.02,.02),offsets)
+        motion = Motion(pool.world.joint_names,np.array([0.,1/3]),
+            np.zeros((2,29)),np.array([[0.,0.,.8],[.1,0.,.8]]),np.array([[0.,0.,0.,1.]]*2))
+        for slot in range(3): refs.load(slot,motion)
+        ids = np.array([2,0,1])
+        queries = set()
+        for tick in range(20):
+            times = np.broadcast_to(tick*.02+offsets,(3,len(offsets)))
+            result = refs.get(ids,times)
+            clamped = np.clip(np.round(times,12),0.,motion.duration_s)
+            queries.update(clamped.flat)
+            np.testing.assert_array_equal(result.source_time_s,clamped)
+            expected = refs.compute(np.repeat(ids,len(offsets)),clamped.ravel())
+            np.testing.assert_array_equal(result.body_position_world_m,
+                expected[:,15+2*29:].reshape(3,len(offsets),len(refs.body_names),13)[...,:3])
+        # Exclude the direct oracle computations from the work count.
+        self.assertEqual(pool.world.reference_work['frames']-20*3*len(offsets),3*len(queries))
+        self.assertLessEqual(refs.width,64)
+        refs.load(0,motion)
+        before = pool.world.reference_work['frames']
+        refs.get([0],np.array([[.1,.2]]))
+        self.assertEqual(pool.world.reference_work['frames']-before,2)
+
     def test_batch_expansion_is_fsum_invariant_to_slot_order_and_reset(self):
         rng = np.random.default_rng(71)
         acc = BatchAccumulator(257)

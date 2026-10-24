@@ -1,4 +1,5 @@
 """Bounded numeric reference cache with batched interpolation and native FK."""
+import math
 import time
 
 import mujoco
@@ -18,16 +19,26 @@ def reference_view(values, joints, body_names):
 
 
 class ArrayReferences:
-    def __init__(self, pool, slots, window):
+    def __init__(self, pool, slots, window, clocks=(), offsets=()):
         self.world,self.fk = pool.world,pool.fk
         self.arena = MotionArena(slots,len(self.world.joint_names))
         self.body_ids = self.world.body_ids
         self.body_names = self.world.body_names
         self.root_row = self.body_ids.index(self.world.root_body_id)
         self.width = 1<<(max(16,4*window)-1).bit_length()
-        self.keys = np.full((slots,self.width),np.iinfo(np.int64).min,dtype=np.int64)
+        # Dense control/metric clocks use a collision-free ring over the preview
+        # span. Irregular clocks retain a bounded hash cache; no full-clip table.
+        ticks = [abs(round(float(t)*1e12)) for t in (*clocks,*offsets) if t]
+        quantum = math.gcd(*ticks) if ticks else 0
+        span = round((max((0.,*offsets))-min((0.,*offsets)))*1e12)
+        required = span//quantum+2 if quantum else 0
+        self.quantum = quantum if quantum and required<=512 else 0
+        if self.quantum:
+            self.width = max(self.width,1<<(required-1).bit_length())
+        # The exact clamped endpoint has its own entry, separate from the ring.
+        self.keys = np.full((slots,self.width+1),np.iinfo(np.int64).min,dtype=np.int64)
         self.columns = 15+2*len(self.world.joint_names)+13*len(self.body_ids)
-        self.values = np.empty((slots,self.width,self.columns))
+        self.values = np.empty((slots,self.width+1,self.columns))
         self.reset_velocity = np.empty((slots,self.world.model.nv))
         self.reset_position = np.empty((slots,self.world.model.nq))
 
@@ -44,6 +55,10 @@ class ArrayReferences:
     def initial_velocity(self, ids):
         return self.reset_velocity[ids]
 
+    def bins(self, slots, keys, times):
+        index = keys//self.quantum if self.quantum else keys^(keys>>17)^(keys>>37)
+        return np.where(times==self.arena.duration[slots],self.width,index&(self.width-1))
+
     def get(self, ids, requested):
         requested = np.asarray(requested,dtype=float)
         ids = np.asarray(ids,dtype=np.int64)
@@ -52,20 +67,25 @@ class ArrayReferences:
         # FK depends on source time, so all beyond-end preview frames share it.
         times = np.clip(np.round(requested.reshape(-1),12),0.,self.arena.duration[slots])
         keys = np.rint(times*1e12).astype(np.int64)
-        bins = (keys^(keys>>17)^(keys>>37))&(self.width-1)
+        bins = self.bins(slots,keys,times)
         hit = self.keys[slots,bins]==keys
         out = np.empty((len(slots),self.columns))
         out[hit] = self.values[slots[hit],bins[hit]]
         if not hit.all():
-            unique,first,inverse = np.unique(np.column_stack((slots[~hit],keys[~hit])),axis=0,return_index=True,return_inverse=True)
+            ms,mk,mt = slots[~hit],keys[~hit],times[~hit]
+            order = np.lexsort((mk,ms))
+            distinct = np.r_[True,(ms[order[1:]]!=ms[order[:-1]])|(mk[order[1:]]!=mk[order[:-1]])]
+            first = order[distinct]
+            inverse = np.empty(len(order),dtype=np.int64)
+            inverse[order] = np.cumsum(distinct)-1
             # Preserve the exact clamped endpoint rather than decoding a rounded key.
-            data = self.compute(unique[:,0],times[~hit][first])
+            data = self.compute(ms[first],mt[first])
             out[~hit] = data[inverse]
-            ub = (unique[:,1]^(unique[:,1]>>17)^(unique[:,1]>>37))&(self.width-1)
-            flat = unique[:,0]*self.width+ub
+            ub = self.bins(ms[first],mk[first],mt[first])
+            flat = ms[first]*(self.width+1)+ub
             _,keep = np.unique(flat,return_index=True)
-            self.keys[unique[keep,0],ub[keep]] = unique[keep,1]
-            self.values[unique[keep,0],ub[keep]] = data[keep]
+            self.keys[ms[first[keep]],ub[keep]] = mk[first[keep]]
+            self.values[ms[first[keep]],ub[keep]] = data[keep]
         out[:,0] = np.round(requested.reshape(-1),12)
         return reference_view(out.reshape(*shape,self.columns),len(self.world.joint_names),self.body_names)
 

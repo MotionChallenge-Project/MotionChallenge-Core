@@ -52,6 +52,11 @@ class VectorPhysics:
             w.root_body_row = w.body_ids.index(w.root_body_id)
             w.body_velocities = bool(requested)
         self.fk = ArrayKinematics(self.world,size,self.batch.nthread)
+        rows = np.arange(size)[:,None]
+        self._qindex = rows*self.world.model.nq+self.world.qadr
+        self._vindex = rows*self.world.model.nv+self.world.vadr
+        self._pd = np.empty((4,size,len(self.world.joint_names)))
+
 
     def _native(self, name, *args, **kwargs):
         started = time.perf_counter()
@@ -92,21 +97,38 @@ class VectorPhysics:
 
     def advance(self, ids, commands, targets):
         world = self.world
-        order = np.argsort(ids)
-        ids = np.asarray(ids,dtype=np.int32)[order]
-        targets = np.asarray(targets)[order]
-        # Core-owned numeric commands already checked once at the policy boundary.
-        values = np.asarray(commands,dtype=np.float64)[order]
+        ids = np.asarray(ids,dtype=np.int32)
+        targets = np.asarray(targets)
+        values = np.asarray(commands,dtype=np.float64)
+        if np.any(ids[1:]<ids[:-1]):
+            order = np.argsort(ids)
+            ids,targets,values = ids[order],targets[order],values[order]
+        # Commands stay fixed between policy ticks. Reuse numeric PD buffers
+        # across all native substeps; gather only current joint state each time.
+        q,qd,kp,kd,ff = values.transpose(1,0,2)
         while True:
             mask = self.time[ids] < targets-1e-10
             if not mask.any():
                 break
-            active = ids[mask]
-            q,qd,kp,kd,ff = values[mask].transpose(1,0,2)
-            self.dt[active] = np.minimum(world.profile['physics_dt_s'],targets[mask]-self.time[active])
-            torque = kp*(q-self.qpos[np.ix_(active,world.qadr)]) + kd*(qd-self.qvel[np.ix_(active,world.vadr)]) + ff
-            self.ctrl[active] = np.clip(torque,-world.limits,world.limits)
-            expected = self.time[active].copy()+self.dt[active]
+            if mask.all():
+                active,goal = ids,targets
+                cq,cv,ckp,ckd,cff = q,qd,kp,kd,ff
+            else:
+                active,goal = ids[mask],targets[mask]
+                cq,cv,ckp,ckd,cff = q[mask],qd[mask],kp[mask],kd[mask],ff[mask]
+            self.dt[active] = np.minimum(world.profile['physics_dt_s'],goal-self.time[active])
+            position,velocity,torque,damping = self._pd[:,:len(active)]
+            np.take(self.qpos,self._qindex[active],out=position,mode='clip')
+            np.take(self.qvel,self._vindex[active],out=velocity,mode='clip')
+            np.subtract(cq,position,out=torque)
+            np.multiply(ckp,torque,out=torque)
+            np.subtract(cv,velocity,out=damping)
+            np.multiply(ckd,damping,out=damping)
+            np.add(torque,damping,out=torque)
+            np.add(torque,cff,out=torque)
+            np.clip(torque,-world.limits,world.limits,out=torque)
+            self.ctrl[active] = torque
+            expected = self.time[active]+self.dt[active]
             self._native('step',ids=active,nstep=1,stage=mujoco.mjtStage.mjSTAGE_NONE)
             if not np.allclose(self.time[active],expected,rtol=0,atol=1e-10):
                 raise FloatingPointError('MuJoCo reset or discontinuous batch simulation time')

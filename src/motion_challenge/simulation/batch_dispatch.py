@@ -13,10 +13,11 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 
-from .batch_physics import BatchPool, Request
-from .physics import World, command_values, forward_kinematics
-from .progress import Progress
+from motion_challenge.simulation.batch_physics import BatchPool, Request
+from motion_challenge.simulation.physics import World, command_values, forward_kinematics
+from motion_challenge.runtime.progress import Progress
 
 
 class RemoteWorld(World):
@@ -85,9 +86,9 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
         socket_root = '/tmp' if sys.platform == 'darwin' else None
         with tempfile.TemporaryDirectory(prefix='mc-batch-', dir=socket_root) as directory:
             address = str(Path(directory)/'physics.sock')
-            with Listener(address, family='AF_UNIX') as listener:
+            with Listener(address, family='AF_UNIX', backlog=size) as listener:
                 # A crashed child must not leave the coordinator in accept().
-                listener._listener._socket.settimeout(120)
+                listener._listener._socket.settimeout(1)
                 for slot in range(size):
                     path = args.output.with_name(args.output.stem+f'.part{slot:02d}.json')
                     records.append(path)
@@ -109,8 +110,19 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
                     thread = threading.Thread(target=log_output, args=(slot, process, path.with_suffix('.log')), daemon=True)
                     log_threads.append(thread)
                     thread.start()
-                for _ in range(size):
-                    connection = listener.accept()
+                startup_deadline = time.monotonic() + 120
+                while len(connections) < size:
+                    try:
+                        connection = listener.accept()
+                    except TimeoutError:
+                        if any(p.poll() is not None for p in processes):
+                            raise RuntimeError('batch slot exited before startup; see part logs')
+                        if time.monotonic() >= startup_deadline:
+                            raise TimeoutError('batch slot startup timed out; see part logs')
+                        continue
+                    if not connection.poll(max(0, startup_deadline-time.monotonic())):
+                        connection.close()
+                        raise TimeoutError('batch slot handshake timed out; see part logs')
                     slot = connection.recv()
                     if slot not in range(size) or slot in connections.values():
                         connection.close()
@@ -166,6 +178,12 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
         for process in processes:
             if process.poll() is None:
                 process.terminate()
+        for process in processes:
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
         raise
     finally:
         args.output.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')

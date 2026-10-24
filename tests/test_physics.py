@@ -6,7 +6,7 @@ import numpy as np
 import mujoco
 
 from motion_challenge.physics import World, forward_kinematics, tracking_sample
-from motion_challenge.reference import Motion
+from motion_challenge.data.reference import Motion
 from motion_challenge.sdk import ControlCommand
 
 

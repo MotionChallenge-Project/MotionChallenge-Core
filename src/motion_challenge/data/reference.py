@@ -4,7 +4,7 @@ from bisect import bisect_right
 from dataclasses import dataclass
 import math
 
-from .sdk import ReferenceFrame, Vector
+from motion_challenge.sdk import ReferenceFrame, Vector
 
 
 def normalize_quaternion(q: Vector) -> Vector:

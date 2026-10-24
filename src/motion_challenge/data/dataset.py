@@ -6,9 +6,9 @@ from pathlib import Path
 import urllib.parse
 import urllib.request
 
-from .progress import Progress, copy_download
-from .reference import Motion
-from .validation import confined_path, external_output_path, sha256_file
+from motion_challenge.runtime.progress import Progress, copy_download
+from motion_challenge.data.reference import Motion
+from motion_challenge.validation import confined_path, external_output_path, sha256_file
 
 
 def fetch_dataset(manifest, root, progress=None):

@@ -6,8 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from motion_challenge.metrics import EpisodeOutcome, orientation_error_rad, summarize
-from motion_challenge.reference import Motion, reference_window
+from motion_challenge.evaluation.metrics import EpisodeOutcome, orientation_error_rad, summarize
+from motion_challenge.data.reference import Motion, reference_window
 from motion_challenge.validation import confined_path, external_output_path, validate_controller, verify_artifacts
 
 

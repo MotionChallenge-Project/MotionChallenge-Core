@@ -15,7 +15,7 @@ __pycache__/
 *.partial
 build/
 results/
-data/
+/data/
 checkpoints/
 *.onnx
 *.pt

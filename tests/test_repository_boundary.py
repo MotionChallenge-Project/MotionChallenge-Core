@@ -8,7 +8,7 @@ class RepositoryBoundaryTests(unittest.TestCase):
         root=Path(__file__).resolve().parents[1]
         for name in ('results','templates','runs','motion-challenge-adapters'):
             self.assertFalse((root/name).exists(),name)
-        for p in (root/'src/motion_challenge').glob('*.py'):
+        for p in (root/'src/motion_challenge').rglob('*.py'):
             for node in ast.walk(ast.parse(p.read_text())):
                 if isinstance(node,ast.Import):names=[a.name for a in node.names]
                 elif isinstance(node,ast.ImportFrom):names=[node.module or '']

@@ -11,7 +11,7 @@ import math
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from .reference import normalize_quaternion
+from motion_challenge.data.reference import normalize_quaternion
 
 
 POSITION_ALIGNMENT_VERSION = 'pelvis_xy_and_closest_yaw_v1'

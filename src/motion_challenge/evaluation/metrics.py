@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import math
 
-from .reference import normalize_quaternion
+from motion_challenge.data.reference import normalize_quaternion
 
 
 def joint_mae_rad(actual, reference):

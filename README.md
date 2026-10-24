@@ -26,10 +26,10 @@ seconds. `--termination early` and `--termination none` remain diagnostic option
 
 | Model | Repository |
 | :-- | :-- |
-| GRIT | [motion-challenge-grit](https://github.com/MotionChallenge-Project/motion-challenge-grit) |
-| SONIC v1.1 | [motion-challenge-sonic-v1-1](https://github.com/MotionChallenge-Project/motion-challenge-sonic-v1-1) |
-| HoloMotion v1.4.1 | [motion-challenge-holomotion-v1-4-1](https://github.com/MotionChallenge-Project/motion-challenge-holomotion-v1-4-1) |
-| PMT Flat | [motion-challenge-pmt-flat](https://github.com/MotionChallenge-Project/motion-challenge-pmt-flat) |
+| GRIT | [MotionChallenge-grit](https://github.com/MotionChallenge-Project/MotionChallenge-grit) |
+| SONIC v1.1 | [MotionChallenge-sonic-v1-1](https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1) |
+| HoloMotion v1.4.1 | [MotionChallenge-holomotion-v1-4-1](https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1) |
+| PMT Flat | [MotionChallenge-pmt-flat](https://github.com/MotionChallenge-Project/MotionChallenge-pmt-flat) |
 
 Clone an adapter with `--recurse-submodules`, then run `uv sync` and
 `uv run evaluate.py`.
@@ -43,6 +43,7 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 [Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
 [Add a benchmark](docs/BENCHMARKS.md) ·
+[Code layout](docs/ARCHITECTURE.md) ·
 [Website](https://motionchallenge-project.github.io/motion-challenge-project/) ·
 [Project](https://github.com/MotionChallenge-Project)
 

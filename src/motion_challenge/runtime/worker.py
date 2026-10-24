@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import traceback
 
-from .sdk import BodyState, ReferenceFrame, StatePacket
+from motion_challenge.sdk import BodyState, ReferenceFrame, StatePacket
 
 
 def packet(cls, data):

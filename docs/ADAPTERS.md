@@ -68,6 +68,10 @@ Adapters receive neither clip names nor scores.
 mapping and PD assembly. Other inference frameworks can implement the SDK
 without this utility. Do not copy dataset or evaluation logic into a model repo.
 
+Keep model-specific extensions behind this factory: additional networks,
+history/caches, observation transforms, filters and control conversions require
+no Core edits. See [the code layout and ownership boundaries](ARCHITECTURE.md).
+
 ## Admission review
 
 Pin the author's source revision and checkpoint. Review joint order, units,

@@ -5,9 +5,9 @@ import unittest
 
 import numpy as np
 
-from motion_challenge.batch_physics import BatchPool
+from motion_challenge.simulation.batch_physics import BatchPool
 from motion_challenge.physics import World
-from motion_challenge.reference import Motion
+from motion_challenge.data.reference import Motion
 from motion_challenge.run import evaluate_clip
 from motion_challenge.sdk import ControlCommand
 

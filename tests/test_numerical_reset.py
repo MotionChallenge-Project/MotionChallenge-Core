@@ -5,7 +5,7 @@ import tempfile
 import unittest
 import mujoco
 import numpy as np
-from motion_challenge.batch_physics import BatchPool, Request
+from motion_challenge.simulation.batch_physics import BatchPool, Request
 from motion_challenge.physics import World, command_values
 from motion_challenge.sdk import ControlCommand
 

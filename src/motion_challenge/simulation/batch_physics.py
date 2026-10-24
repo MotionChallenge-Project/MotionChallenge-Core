@@ -13,7 +13,7 @@ import mujoco
 from mujoco import batch
 import numpy as np
 
-from .physics import World, command_values
+from motion_challenge.simulation.physics import World, command_values
 
 
 @dataclass

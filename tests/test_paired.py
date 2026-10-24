@@ -1,6 +1,6 @@
 import copy
 import unittest
-from motion_challenge.paired import combine
+from motion_challenge.evaluation.paired import combine
 
 def fixture():
     clip={'id':'x','duration_s':2.,'success':False,'completion':.5,'failure_time_s':1.,'failure_reasons':['height'],'sample_count':50,'metric_means_over_observed_prefix':{'mpbpe':.1}}

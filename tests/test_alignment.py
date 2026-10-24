@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from motion_challenge.alignment import keybody_position_errors
+from motion_challenge.evaluation.alignment import keybody_position_errors
 
 
 class AlignmentTests(unittest.TestCase):

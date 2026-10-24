@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from motion_challenge.batch_physics import BatchPool
-from motion_challenge.dataset import load_csv_motion
+from motion_challenge.simulation.batch_physics import BatchPool
+from motion_challenge.data.dataset import load_csv_motion
 from motion_challenge.physics import World
 from motion_challenge.run import evaluate_clip
 from motion_challenge.sdk import ControlCommand

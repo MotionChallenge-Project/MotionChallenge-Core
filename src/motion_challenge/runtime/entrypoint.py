@@ -22,7 +22,7 @@ from motion_challenge.resources import lafan_paths
 from motion_challenge.runtime.progress import Progress, copy_download
 from motion_challenge.validation import external_output_path, sha256_file
 from motion_challenge.evaluation.verify import verify
-from motion_challenge.evaluation.paired import combine
+from motion_challenge.evaluation.paired import combine, online_prefix
 
 
 def artifact(path, expected_hash, url=None, offline=False, progress=None):
@@ -61,11 +61,9 @@ def source_snapshot(root):
              if name and (root/name).is_file()}
     def git(*args):
         return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
-    cores = [root/name for name in ('MotionChallenge-Core', 'motion-challenge')
-             if (root/name).is_dir()]
-    if len(cores) != 1:
-        raise ValueError('Expected one core submodule: MotionChallenge-Core (or legacy motion-challenge)')
-    core = cores[0]
+    core = root/'MotionChallenge-Core'
+    if not core.is_dir():
+        raise ValueError('Expected core submodule named MotionChallenge-Core')
     return {'adapter_commit': git('rev-parse', 'HEAD'),
             'adapter_dirty': bool(git('status', '--porcelain', '--untracked-files=normal')),
             'tracked_files_sha256': files,
@@ -124,24 +122,34 @@ def main(adapter_root=None):
     p.add_argument('--artifact', action='append', default=[], metavar='NAME=PATH',
                    help='Use a cached additional model component; repeat for multi-file policies')
     p.add_argument('--output', type=Path, help='New directory outside any Git repository')
-    p.add_argument('--jobs', type=int, default=min(8, os.cpu_count() or 1))
+    p.add_argument('--jobs', type=int, help='Active slots; default scales with CPUs and the adapter batch interface')
+    p.add_argument('--inference-batch-size', type=int, help='Maximum policy samples per call, independent of simulation slots')
     p.add_argument('--backend', choices=['batch'], default='batch', help=argparse.SUPPRESS)
     p.add_argument('--termination', choices=['both', 'early', 'none'], default='both',
                    help='Compute both metric scopes from one full rollout (default), or select a diagnostic mode')
-    p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to batch slots')
+    p.add_argument('--threads', type=int, help='MuJoCo CPU threads; defaults to min(8, slots, available CPUs)')
     p.add_argument('--progress-interval', type=float, default=5.0)
+    p.add_argument('--no-traces', action='store_true', help='Online results only; skip trace recording and independent verification')
     p.add_argument('--offline', action='store_true')
     p.add_argument('--max-clips', type=int)
     p.add_argument('--max-duration', type=float)
     a = p.parse_args()
-    if a.jobs < 1 or (a.max_clips is not None and a.max_clips < 1):
+    if (a.jobs is not None and a.jobs < 1) or (a.max_clips is not None and a.max_clips < 1):
         p.error('jobs and max-clips must be positive')
     if a.progress_interval <= 0 or (a.threads is not None and a.threads < 1):
         p.error('progress interval and threads must be positive')
+    if a.inference_batch_size is not None and a.inference_batch_size < 1:
+        p.error('inference batch size must be positive')
     root = Path(adapter_root or Path.cwd()).resolve()
     original = root/'runtime.json'
     runtime = json.loads(original.read_text())
     runtime = resolve_observation_contract(runtime, root)
+    if a.jobs is None:
+        from motion_challenge.simulation.vector_physics import cpu_count
+        batched = runtime.get('array_batch_entrypoint') or runtime.get('batch_entrypoint')
+        a.jobs = min(64,4*cpu_count()) if batched else min(8,cpu_count())
+    if a.inference_batch_size is not None:
+        runtime['inference_batch_size'] = a.inference_batch_size
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     output = external_output_path((a.output or Path.home()/'.local/share/MotionChallenge/runs'/runtime['id']/stamp).expanduser())
     if output.exists() and any(output.iterdir()):
@@ -198,8 +206,9 @@ def run_pair(root, args, runtime, output, source, stamp):
                                      'result': 'rollout/'+path.name,
                                      'success_count': result['success_count'], 'macro_completion': result['macro_completion'],
                                      'metrics': result['macro_metrics_over_observed_prefix']}
-        if receipt['status'] == 'trace_verified':
-            combined = combine(json.loads(prefix_path.read_text()), json.loads(full_path.read_text()), source, runtime['weights_sha256'])
+        if receipt['status'] in ('trace_verified','completed_without_traces','smoke_without_traces'):
+            combined = combine(json.loads(prefix_path.read_text()), json.loads(full_path.read_text()), source, runtime.get('weights_sha256'))
+            combined['status'] = receipt['status']
             combined['execution'] = 'single_full_rollout'
             combined['components'] = {mode: {
                 'result': item['result'], 'result_sha256': sha256_file(output/item['result']),
@@ -245,12 +254,15 @@ def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False)
                    '--progress-interval', str(a.progress_interval)]
         if a.threads is not None:
             command += ['--threads', str(a.threads)]
-        for clip in clips:
-            command += ['--clip-id', clip['path']]
+        if a.max_clips is not None:
+            command += ['--max-clips', str(a.max_clips)]
         if a.max_duration is not None:
             command += ['--max-duration', str(a.max_duration)]
+        if getattr(a,'no_traces',False):
+            command += ['--no-traces']
         with (output/f'shard-{index:02d}.log').open('w') as log:
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+                env=dict(os.environ,OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1'))
             try:
                 for line in process.stdout:
                     log.write(line)
@@ -262,6 +274,7 @@ def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False)
                 if process.poll() is None:
                     process.terminate()
                     process.wait()
+                process.stdout.close()
         print(f'Finished shard {index+1}/{count}', flush=True)
         return result
 
@@ -269,17 +282,26 @@ def run_mode(root, a, runtime, output, mode, before, stamp, derive_prefix=False)
     try:
         results = [evaluate((0, selected))]
         rollout_finished = time.monotonic()
-        progress.emit('verification', force=True, status='started')
         partial = a.max_clips is not None or a.max_duration is not None
-        # Both complete and smoke records use the same verified path.
         shutil.copyfile(results[0], output/'result.json')
-        options = ({'prefix_result_path': output/'prefix-result.json',
+        if getattr(a,'no_traces',False):
+            if derive_prefix:
+                prefix_path = lafan_paths('early')['protocol']
+                prefix = online_prefix(json.loads((output/'result.json').read_text()),
+                    json.loads(prefix_path.read_text()),sha256_file(prefix_path))
+                (output/'prefix-result.json').write_text(json.dumps(prefix,indent=2)+'\n')
+            check = {'verification':'not_recorded','scope':'online metrics only'}
+            status = 'smoke_without_traces' if partial else 'completed_without_traces'
+        else:
+            progress.emit('verification', force=True, status='started')
+            options = ({'prefix_result_path': output/'prefix-result.json',
                     'prefix_protocol_path': lafan_paths('early')['protocol']} if derive_prefix else {})
-        check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, jobs=count, **options)
+            check = verify(output/'result.json', paths['suite'], paths['robot'], paths['protocol'], a.data, resolved, jobs=count, **options)
+            status = 'verified_smoke' if partial else 'trace_verified'
         verification_finished = time.monotonic()
         receipt['timings_s'] = {'rollout': rollout_finished-run_started,
                                'verification': verification_finished-rollout_finished}
-        receipt.update(status='verified_smoke' if partial else 'trace_verified', verification=check, full_suite=not partial)
+        receipt.update(status=status, verification=check, full_suite=not partial)
         after = source_snapshot(root)
         receipt['source_unchanged_during_run'] = before == after
         if before != after:

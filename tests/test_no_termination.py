@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from motion_challenge.simulation.batch_physics import BatchPool
+from vector_helpers import VectorWorld
 from motion_challenge.data.dataset import load_csv_motion
 from motion_challenge.physics import World
-from motion_challenge.run import evaluate_clip
+from scalar_oracle import evaluate_clip
 from motion_challenge.sdk import ControlCommand
 from motion_challenge.validation import sha256_file
 from motion_challenge.verify import verify
@@ -53,7 +53,7 @@ class NoTerminationTests(unittest.TestCase):
             self.assertEqual(full['completion'],early['completion'])
             self.assertTrue(trace.startswith(early_trace))
             self.assertGreater(full['sample_count'],early['sample_count'])
-            self.assertEqual(BatchPool(PROFILE,2,2).run(lambda slot,world:run(world,protocol)),[(full,trace)]*2)
+            self.assertEqual(run(VectorWorld(PROFILE),protocol),(full,trace))
             # Recovery cannot erase the first failure or advance completion.
             ticks = iter([(['anchor_height'],{'error':1.})]+[([],{'error':0.})]*100)
             with patch('motion_challenge.run.tracking_sample',side_effect=lambda *args:next(ticks)):

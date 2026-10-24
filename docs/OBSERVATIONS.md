@@ -45,7 +45,7 @@ path, and new complete independently verified evaluations. An unverified path
 remains pending; a checkpoint requiring forbidden information is not admitted, without a claim about its intrinsic capability.
 
 Core removes prohibited fields before sending reset/act packets to either
-single-controller or batched inference workers. `ProprioceptiveStatePacket` is
+single-controller or batched inference calls. `ProprioceptiveStatePacket` is
 an explicit allowlist. `KinematicStateView` is an optional adapter-side FK
 utility using only that packet and a fixed robot asset. External adapters can
 implement their own FK or author deployment preprocessing without changing

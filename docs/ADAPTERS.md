@@ -51,7 +51,7 @@ Multi-file policies can add an `artifacts` mapping to `runtime.json`:
 {"artifacts": {"encoder": {"path": "checkpoints/encoder.onnx", "sha256": "64 hex digits", "url": "https://author.example/encoder.onnx"}}}
 ```
 
-The core reuses, downloads and verifies each component before starting workers.
+The core reuses, downloads and verifies each component before evaluation.
 Use `--artifact encoder=/path/to/encoder.onnx` for a local override. The resolved
 paths and hashes are bound into the runtime receipt. Model code reads
 `config["artifacts"]["encoder"]["path"]`; data and evaluation remain in the core.
@@ -98,31 +98,26 @@ no Core edits. See [the code layout and ownership boundaries](ARCHITECTURE.md).
 
 ### Optional batched inference
 
-`--jobs N` accepts any positive parallel slot count, limited by the available
-motions. Existing `reset/act/close` adapters need no changes. The core caches
-immutable reference encoding and runs their independent policy workers.
+`--jobs N` controls active simulation slots; it does not create N processes.
+One Core loop uses MuJoCo's CPU thread pool and calls the policy directly in
+the same process. Engines and any remote-inference connection stay in the adapter.
+Motions are scheduled longest first, and free slots immediately receive the next
+motion. Every motion still starts at its first frame with independent history.
 
-For a model that benefits from batched inference, declare
-`"batch_entrypoint": "adapter:create_batch"` in `runtime.json`. Its factory
-returns a `motion_challenge.sdk.BatchController` implementing:
+Adapters may implement `batch_entrypoint` for SDK packets, or
+`array_batch_entrypoint` for read-only NumPy views. Both use `reset_batch`,
+`act_batch` and `close`; histories belong to slot IDs, not batch row numbers.
+The scalar `entrypoint` remains usable for controllers without batch support.
+Its model calls run individually; declaring more slots alone does not batch them.
 
-```python
-reset_batch(slots, states, references, seeds)
-act_batch(slots, states, references)  # one ControlCommand per supplied slot
-close()
-```
+`--inference-batch-size N` (or runtime `inference_batch_size`) limits samples per
+policy call independently of `--jobs` and MuJoCo `--threads`. Any positive sizes,
+partial resets and tail batches are supported. The adapter owns fixed-shape
+padding, device placement and inference engines, including TensorRT.
 
-Each call may contain any nonempty subset of slots. Keep histories and recurrent
-state separate per slot; reset only the supplied slots. Commands use the same
-order as `slots`. The optional positive `inference_batch_size` caps each call
-independently of `--jobs`; tail batches may be smaller. Fixed-shape models can
-pad, split or execute individually inside their adapter, preserving author
-semantics. Specialized runtimes and devices belong in the adapter's dependencies.
-
-The core owns scheduling and sends the same state/reference packets as the
-single-slot interface. Model workers cannot request different physics, clocks,
-failure rules or metrics. Compare batched outputs against independent inference
-over resets, partial batches and long sequences before enabling this path.
+See [batch interfaces and resource limits](BATCHING.md) for array shapes and an
+example. Validate observations, outputs and controls against the author's
+single-sample inference before enabling batched model execution.
 
 ## Admission review
 

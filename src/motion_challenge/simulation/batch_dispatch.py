@@ -1,216 +1,176 @@
-"""Independent evaluation processes feeding one official MuJoCo CPU batch.
-
-Only small PD commands and generalized states cross the physics connection.
-Reference FK, policy JSON, history and scoring stay parallel in slot processes.
-Connections are private core-to-core IPC, not an untrusted adapter interface.
-"""
+"""A bounded batch loop with longest-first dynamic refill and direct policy calls."""
+import heapq
+from itertools import islice
 import json
 import math
-from multiprocessing.connection import Client, Listener, wait
-import os
 from pathlib import Path
-import subprocess
-import sys
-import tempfile
-import threading
 import time
 
-from motion_challenge.simulation.batch_physics import BatchPool, Request
-from motion_challenge.simulation.physics import World, command_values, forward_kinematics
+from motion_challenge.data.dataset import load_csv_motion
+from motion_challenge.evaluation.run import clip_steps
+from motion_challenge.evaluation.batch_metrics import tracking_batch
+from motion_challenge.evaluation.traces import TraceWriter
 from motion_challenge.runtime.progress import Progress
+from motion_challenge.runtime.policy import PolicyBatch
+from motion_challenge.simulation.vector_physics import VectorPhysics
+from motion_challenge.validation import confined_path, sha256_file
 
 
-class RemoteWorld(World):
-    def __init__(self, profile, address, slot):
-        super().__init__(profile)
-        self.connection = Client(address, family='AF_UNIX')
-        self.connection.send(slot)
-
-    def _receive(self):
-        reply = self.connection.recv()
-        if isinstance(reply, dict):
-            raise RuntimeError(reply['error'])
-        self.data.time, qpos, qvel = reply
-        self.data.qpos[:] = qpos
-        self.data.qvel[:] = qvel
-        # State packets need body-origin FK/Jacobians, not an extra constraint
-        # solve. The authoritative persistent solver state stays in Batch.
-        forward_kinematics(self.model, self.data)
-
-    def reset(self, motion):
-        super().reset(motion)
-        self.connection.send(('reset', self.data.qpos.copy(), self.data.qvel.copy()))
-        self._receive()
-        return self.state()
-
-    def advance(self, command, until_s):
-        self.connection.send(('advance', command_values(command, len(self.joints)), until_s))
-        self._receive()
-
-    def close(self):
-        self.connection.send(('done',))
-        self.connection.close()
+def motion_frames(path):
+    """Bounded-memory preflight for CSV suites without frame-count metadata."""
+    with path.open('rb') as stream:
+        return sum(1 for line in stream if line.strip())
 
 
 def evaluate_batch(args, selected, results, protocol, full_suite):
-    size = min(args.batch_size, len(selected))
-    progress = Progress(args.output.with_suffix('.progress.json'), args.progress_interval)
-    pool = BatchPool(args.robot, size, args.threads)
-    results['batch_size'] = size
-    results['batch_threads'] = pool.batch.nthread
-    results['execution'] = 'multiprocess_reference_policy_scoring_shared_mujoco_batch'
-    records, processes, connections = [], [], {}
-    policy_process, policy_log = None, None
-    log_threads = []
-    states = {}
-    def log_output(slot, process, path):
-        with path.open('w') as log:
-            for line in process.stdout:
-                log.write(line)
-                log.flush()
-                try:
-                    event = json.loads(line)
-                except ValueError:
-                    print(line, end='', flush=True)
-                    continue
-                if event.get('phase') == 'evaluation':
-                    with progress.lock:
-                        old = states.get(slot, {}).get('completed', 0)
-                        states[slot] = event
-                        active = {str(i): next(iter(e.get('active', {}).values()))
-                                  for i, e in states.items() if e.get('active')}
-                        progress.emit('evaluation', force=event['completed'] != old,
-                            completed=sum(e['completed'] for e in states.values()), total=len(selected),
-                            passed=sum(e['passed'] for e in states.values()), active=active, backend='batch')
+    if not selected:
+        raise ValueError('empty motion selection')
+    started = time.monotonic()
+    size = min(args.batch_size,len(selected))
+    runtime = json.loads(args.controller.read_text())
+    manifest = json.loads(args.suite.read_text())
+    scoring_bodies = set(protocol['metric_bodies']) | {protocol['failure']['anchor_body']}
+    scoring_bodies.update(protocol['failure']['end_effector_bodies'])
+    pool = VectorPhysics(args.robot,size,args.threads,scoring_bodies)
+    writer = None if getattr(args,'no_traces',False) else TraceWriter()
+    progress = Progress(args.output.with_suffix('.progress.json'),args.progress_interval)
+    worker = None
+    queue,active,requests,finished = [],{},{},{}
+    timings = dict(preflight=0.,dataset_load=0.,metrics=0.,reference_trace=0.,physics=0.,policy=0.,trace_finalize=0.)
+    results.update(batch_size=size,batch_threads=pool.batch.nthread,
+        execution='vector_loop_in_process_adapter',policy_execution='direct_call',
+        scheduling='longest_first_dynamic_refill')
+
+    def report(force=False):
+        if not force and time.monotonic()-progress.last.get(('evaluation',None),-float('inf')) < progress.interval:
+            return
+        progress.emit('evaluation',force=force,completed=len(finished),total=len(selected),
+            passed=sum(c['success'] for c in finished.values()),
+            active_count=len(active),active_preview_limit=16,
+            active={str(i):dict(clip=x['clip']['path'],time_s=float(pool.time[i]),duration_s=x['duration'])
+                    for i,x in islice(active.items(),16)},backend='batch',
+            timings_s={**timings,'elapsed':time.monotonic()-started},
+            reference_work=pool.world.reference_work,
+            trace_work=pool.world.trace_work,
+            native_batch_calls=pool.native_timings,
+            policy_phases={} if worker is None else worker.telemetry)
+
+    def refill(slot):
+        if not queue:
+            return
+        load_started = time.monotonic()
+        _,index,clip = heapq.heappop(queue)
+        path = confined_path(args.data,clip['path'])
+        # Recheck at use time, so preflight cannot hide a changed file.
+        if sha256_file(path)!=clip['sha256']:
+            raise ValueError('dataset integrity mismatch')
+        motion = load_csv_motion(path,manifest['joint_names'],manifest['source_fps'])
+        timings['dataset_load'] += time.monotonic()-load_started
+        world = pool.reference_world(motion,max(8,2*len(runtime['reference_offsets_s'])+4))
+        trace_path = args.output.with_name(args.output.stem+f'.clip{index:05d}.poses.jsonl.gz')
+        trace = writer.open(trace_path) if writer is not None else None
+        episode = clip_steps(world,motion,runtime,protocol,args.max_duration,trace)
+        active[slot] = dict(index=index,clip=clip,world=world,episode=episode,trace=trace,
+                            path=trace_path,duration=motion.duration_s)
+        requests[slot] = next(episode)
+
+    def resume(slot,response):
+        item = active[slot]
+        try:
+            requests[slot] = item['episode'].send(response)
+        except StopIteration as done:
+            requests.pop(slot,None)
+            t = time.monotonic()
+            if item['trace'] is not None:
+                item['trace'].close()
+            timings['trace_finalize'] += time.monotonic()-t
+            result = done.value
+            if item['trace'] is not None:
+                result['trace'] = dict(path=item['path'].name,sha256=sha256_file(item['path']))
+            finished[item['index']] = dict(id=item['clip']['path'],**result)
+            del active[slot]
+            report()
+            refill(slot)
+
     try:
-        # Keep the UNIX socket path short and canonical on macOS.
-        socket_root = '/tmp' if sys.platform == 'darwin' else None
-        with tempfile.TemporaryDirectory(prefix='mc-batch-', dir=socket_root) as directory:
-            address = str(Path(directory)/'physics.sock')
-            runtime = json.loads(args.controller.read_text())
-            policy_address = None
-            if runtime.get('batch_entrypoint'):
-                policy_address = str(Path(directory)/'policy.sock')
-                policy_log = args.output.with_suffix('.batch-worker.log').open('w')
-                policy_process = subprocess.Popen(
-                    [args.worker_python or sys.executable, '-m', 'motion_challenge.runtime.batch_worker',
-                     str(args.controller.resolve()), policy_address, str(size)],
-                    stdout=policy_log, stderr=subprocess.STDOUT,
-                    env=dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1'))
-                results['policy_execution'] = 'adapter_batch_entrypoint'
-            with Listener(address, family='AF_UNIX', backlog=size) as listener:
-                # A crashed child must not leave the coordinator in accept().
-                listener._listener._socket.settimeout(1)
-                for slot in range(size):
-                    path = args.output.with_name(args.output.stem+f'.part{slot:02d}.json')
-                    records.append(path)
-                    command = [sys.executable, '-m', 'motion_challenge.run', '--backend', 'batch-client',
-                               '--batch-address', address, '--batch-slot', str(slot), '--output', str(path),
-                               '--progress-interval', str(args.progress_interval)]
-                    for name in ('controller', 'suite', 'protocol', 'robot', 'data'):
-                        command += ['--'+name, str(getattr(args, name))]
-                    for clip in selected[slot::size]:
-                        command += ['--clip-id', clip['path']]
-                    if args.max_duration is not None:
-                        command += ['--max-duration', str(args.max_duration)]
-                    if args.worker_python:
-                        command += ['--worker-python', args.worker_python]
-                    if policy_address:
-                        command += ['--policy-batch-address', policy_address]
-                    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                               text=True, bufsize=1,
-                                               env=dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1'))
-                    processes.append(process)
-                    thread = threading.Thread(target=log_output, args=(slot, process, path.with_suffix('.log')), daemon=True)
-                    log_threads.append(thread)
-                    thread.start()
-                startup_deadline = time.monotonic() + 120
-                while len(connections) < size:
-                    try:
-                        connection = listener.accept()
-                    except TimeoutError:
-                        if any(p.poll() is not None for p in processes):
-                            raise RuntimeError('batch slot exited before startup; see part logs')
-                        if time.monotonic() >= startup_deadline:
-                            raise TimeoutError('batch slot startup timed out; see part logs')
-                        continue
-                    if not connection.poll(max(0, startup_deadline-time.monotonic())):
-                        connection.close()
-                        raise TimeoutError('batch slot handshake timed out; see part logs')
-                    slot = connection.recv()
-                    if slot not in range(size) or slot in connections.values():
-                        connection.close()
-                        raise ValueError('invalid batch slot handshake')
-                    connections[connection] = slot
-                pending = {}
-                while connections:
-                    if policy_process is not None and policy_process.poll() not in (None, 0):
-                        raise RuntimeError('batch adapter exited; see batch-worker log')
-                    ready = wait([c for c in connections if connections[c] not in pending], timeout=1)
-                    if not ready and any(p.poll() not in (None, 0) for p in processes):
-                        raise RuntimeError('batch slot process failed; see part logs')
-                    for connection in ready:
-                        slot = connections[connection]
-                        request = connection.recv()
-                        if request[0] == 'done':
-                            connection.close()
-                            del connections[connection]
-                        elif request[0] == 'reset':
-                            pool.worlds[slot].data.qpos[:] = request[1]
-                            pool.worlds[slot].data.qvel[:] = request[2]
-                            pending[slot] = Request('reset')
-                        elif request[0] == 'advance':
-                            pending[slot] = Request('advance', request[1], request[2])
-                        else:
-                            raise ValueError('unknown batch physics request')
-                    if pending and set(connections.values()) <= pending.keys():
-                        pool._execute(pending)
-                        for connection, slot in connections.items():
-                            connection.send((float(pool.time[slot]), pool.qpos[slot], pool.qvel[slot]))
-                        pending.clear()
-                for process in processes:
-                    if process.wait(timeout=30):
-                        raise RuntimeError('batch slot failed after simulation')
-                if policy_process is not None and policy_process.wait(timeout=30):
-                    raise RuntimeError('batch adapter failed; see batch-worker log')
-        for thread in log_threads:
-            thread.join(timeout=5)
-        parts = [json.loads(path.read_text()) for path in records]
-        if any(p['status'] != 'completed' for p in parts):
-            raise ValueError('incomplete batch part')
-        clips = {c['id']: c for part in parts for c in part['clips']}
-        if len(clips) != sum(len(p['clips']) for p in parts) or set(clips) != {c['path'] for c in selected}:
-            raise ValueError('batch output has duplicate or missing clips')
-        results['clips'] = [clips[c['path']] for c in selected]
-        results.update(status='completed', full_suite=full_suite,
+        for index,clip in enumerate(selected):
+            path = confined_path(args.data,clip['path'])
+            if sha256_file(path)!=clip['sha256']:
+                raise ValueError('dataset integrity mismatch')
+            frames = motion_frames(path)
+            heapq.heappush(queue,(-frames,index,clip))
+        timings['preflight'] = time.monotonic()-started
+        for slot in range(size):
+            refill(slot)
+        while active:
+            for op in ('reset','policy_reset','act','advance','score'):
+                ids = sorted(i for i,r in requests.items() if r[0]==op)
+                if not ids:
+                    continue
+                t = time.monotonic()
+                if op=='reset':
+                    pool.reset(ids,[active[i]['world'] for i in ids])
+                    responses = pool.states(ids)
+                    timings['physics'] += time.monotonic()-t
+                elif op=='advance':
+                    pool.advance(ids,[requests[i][1] for i in ids],[requests[i][2] for i in ids])
+                    responses = pool.states(ids)
+                    timings['physics'] += time.monotonic()-t
+                elif op=='score':
+                    responses = tracking_batch([requests[i][1] for i in ids],
+                                               [requests[i][2] for i in ids],protocol)
+                    timings['metrics'] += time.monotonic()-t
+                else:
+                    states = [requests[i][1] for i in ids]
+                    refs = [requests[i][2] for i in ids]
+                    if worker is None:
+                        worker = PolicyBatch(args.controller,size,states[0],refs[0],
+                            args.output.with_suffix('.adapter.log'))
+                    results['inference_batch_size'] = worker.capacity
+                    results['policy_interface'] = ('arrays' if runtime.get('array_batch_entrypoint') else
+                        'packets' if runtime.get('batch_entrypoint') else 'scalar')
+                    if op=='policy_reset':
+                        worker.call('reset',ids,states,refs,[requests[i][3] for i in ids])
+                        responses = [None]*len(ids)
+                    else:
+                        responses = worker.call('act',ids,states,refs)
+                    timings['policy'] += time.monotonic()-t
+                t = time.monotonic()
+                trace_time = timings['trace_finalize']+timings['dataset_load']
+                for slot,response in zip(ids,responses):
+                    resume(slot,response)
+                timings['reference_trace'] += time.monotonic()-t-(timings['trace_finalize']+timings['dataset_load']-trace_time)
+            report()
+        report(True)
+        results['clips'] = [finished[i] for i in range(len(selected))]
+        results.update(status='completed',full_suite=full_suite,
             success_count=sum(c['success'] for c in results['clips']),
             macro_completion=math.fsum(c['completion'] for c in results['clips'])/len(selected))
         if protocol.get('position_alignment_metrics'):
             results['macro_metrics_over_observed_prefix'] = {
-                k: math.fsum(c['metric_means_over_observed_prefix'][k] for c in results['clips'])/len(selected)
-                for k in results['clips'][0]['metric_means_over_observed_prefix']}
+                key:math.fsum(c['metric_means_over_observed_prefix'][key] for c in results['clips'])/len(selected)
+                for key in results['clips'][0]['metric_means_over_observed_prefix']}
     except BaseException as error:
-        results.update(status='infrastructure_error', error=f'{type(error).__name__}: {error}')
-        for connection in connections:
-            connection.close()
-        for process in processes:
-            if process.poll() is None:
-                process.terminate()
-        for process in processes:
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+        results.update(status='infrastructure_error',error=f'{type(error).__name__}: {error}',
+                       clips=[finished[i] for i in sorted(finished)])
         raise
     finally:
-        if policy_process is not None and policy_process.poll() is None:
-            policy_process.terminate()
-            try:
-                policy_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                policy_process.kill()
-                policy_process.wait()
-        if policy_log is not None:
-            policy_log.close()
-        args.output.write_text(json.dumps(results, indent=2, allow_nan=False)+'\n')
+        try:
+            if worker is not None:
+                worker.close()
+            for item in active.values():
+                item['episode'].close()
+            if writer is not None:
+                writer.close()
+        finally:
+            timings['total'] = time.monotonic()-started
+            results['timings_s'] = timings
+            results['native_batch_calls'] = pool.native_timings
+            results['reference_work'] = pool.world.reference_work
+            results['trace_work'] = pool.world.trace_work
+            if worker is not None:
+                results['adapter_transport'] = dict(
+                    mechanism='in_process_direct_call',
+                    input_buffer_bytes=worker.buffer.size_bytes if worker.buffer is not None else 0,
+                    phases=worker.telemetry)
+            args.output.write_text(json.dumps(results,indent=2,allow_nan=False)+'\n')

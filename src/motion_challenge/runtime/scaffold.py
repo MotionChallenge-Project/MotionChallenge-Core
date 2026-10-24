@@ -5,17 +5,23 @@ import subprocess
 from pathlib import Path
 
 
-FIXTURE='''from motion_challenge.sdk import ControlCommand
+FIXTURE='''import numpy as np
+from motion_challenge.sdk import ControlBatch
 
 
 class ReferencePD:
-    """Interface fixture only. Replace with a trained model before ranking."""
-    def reset(self, state, reference, seed):
+    """Array-interface fixture only; replace with a verified trained policy."""
+    def reset_batch(self, slots, states, references, seeds):
+        # Reset only these slot IDs when your policy has history or RNG state.
         pass
 
-    def act(self, state, reference):
-        return ControlCommand(tuple(reference[0].joint_position_rad), (0.,)*29,
-                              (40.,)*29, (2.,)*29, (0.,)*29)
+    def act_batch(self, slots, states, references):
+        # Inputs are read-only, [batch, ...]; copy anything retained in history.
+        # Load your engine once in __init__ and invoke it here.
+        target = references.joint_position_rad[:, 0].copy()
+        zero = np.zeros_like(target)
+        return ControlBatch(target, zero, np.full_like(target, 40.),
+                            np.full_like(target, 2.), zero)
 
     def close(self):
         pass
@@ -61,7 +67,7 @@ def create_project(destination,core_path):
     (destination/'adapter.py').write_text(FIXTURE)
     (destination/'smoke.py').write_text(SMOKE)
     (destination/'evaluate.py').write_text('from pathlib import Path\nfrom motion_challenge.entrypoint import main\n\nif __name__ == "__main__":\n    main(Path(__file__).parent)\n')
-    runtime={'id':'reference-pd-interface-fixture','entrypoint':'adapter:create','control_period_s':.02,
+    runtime={'id':'reference-pd-interface-fixture','entrypoint':'adapter:create','array_batch_entrypoint':'adapter:create','control_period_s':.02,
              'reference_offsets_s':[0.],'reference_history_s':0.,'reference_preview_s':0.,'state_access':'ideal-proprioceptive-no-position-v1',
              'action_mode':'joint-pd-feedforward','official':False,'is_trained_checkpoint':False}
     (destination/'runtime.json').write_text(json.dumps(runtime,indent=2)+'\n')

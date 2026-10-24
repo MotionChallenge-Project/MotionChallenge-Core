@@ -4,15 +4,27 @@ The returned legacy-shaped packet has a synthetic, fixed origin. It is not a
 measurement or estimate of global position. Adapters must disclose its use and
 prove observation/action equivalence or an author-supported deployment path.
 """
+import copy
+from functools import lru_cache
+from pathlib import Path
+
+import mujoco
 from scipy.spatial.transform import Rotation
 
 from motion_challenge.sdk import ProprioceptiveStatePacket
 from motion_challenge.simulation.physics import World, forward_kinematics
 
 
+@lru_cache(maxsize=4)
+def _template(profile):
+    return World(profile)
+
+
 class KinematicStateView:
     def __init__(self, robot_profile, origin=(0.0, 0.0, 0.0)):
-        self.world = World(robot_profile)
+        # FK reads the canonical model; only its per-controller MjData mutates.
+        self.world = copy.copy(_template(str(Path(robot_profile).resolve())))
+        self.world.data = mujoco.MjData(self.world.model)
         self.origin = tuple(float(x) for x in origin)
         if len(self.origin) != 3:
             raise ValueError('synthetic origin must have three coordinates')

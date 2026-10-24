@@ -5,10 +5,11 @@ import unittest
 
 import numpy as np
 
-from motion_challenge.simulation.batch_physics import BatchPool
+from motion_challenge.simulation.vector_physics import VectorPhysics
+from vector_helpers import VectorWorld
 from motion_challenge.physics import World
 from motion_challenge.data.reference import Motion
-from motion_challenge.run import evaluate_clip
+from scalar_oracle import evaluate_clip
 from motion_challenge.sdk import ControlCommand
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,23 +30,28 @@ def command(t):
 class BatchPhysicsTests(unittest.TestCase):
     def test_substeps_fractional_endpoint_reset_and_inactive_slots(self):
         for threads in (1, 3):
-            pool = BatchPool(PROFILE, 3, threads)
-            def trajectory(slot, world):
-                serial = World(PROFILE)
-                for episode in range(slot+1):
-                    clip = motion(world, height=.78+.01*slot)
-                    world.reset(clip)
-                    serial.reset(clip)
-                    for t in (.007, .02, .041, .11, .2, 1/3):
-                        action = command(t+episode)
-                        world.advance(action, t)
-                        serial.advance(action, t)
-                        np.testing.assert_array_equal(world.data.qpos, serial.data.qpos)
-                        np.testing.assert_array_equal(world.data.qvel, serial.data.qvel)
-                        np.testing.assert_array_equal(world.data.xpos, serial.data.xpos)
-                        self.assertAlmostEqual(world.data.time, t, places=12)
-                return slot
-            self.assertEqual(pool.run(trajectory), [0, 1, 2])
+            pool = VectorPhysics(PROFILE, 3, threads)
+            serials = [World(PROFILE) for _ in range(3)]
+            for episode,ids in enumerate(([2,0,1],[1,2],[0])):
+                worlds = [pool.reference_world(motion(pool.world,height=.78+.01*i),64) for i in ids]
+                pool.reset(ids,worlds)
+                for i,world in zip(ids,worlds): serials[i].reset(world.motion)
+                for t in (.007, .02, .041, .11, .2, 1/3):
+                    actions = [command(t+episode+i) for i in ids]
+                    inactive = [i for i in range(3) if i not in ids]
+                    before = pool.qpos[inactive].copy()
+                    pool.advance(ids,actions,[t]*len(ids))
+                    np.testing.assert_array_equal(pool.qpos[inactive],before)
+                    for i,action,state in zip(ids,actions,pool.states(ids)):
+                        serial = serials[i]
+                        serial.advance(action,t)
+                        np.testing.assert_array_equal(pool.qpos[i],serial.data.qpos)
+                        np.testing.assert_array_equal(pool.qvel[i],serial.data.qvel)
+                        np.testing.assert_array_equal(pool.xpos[i],serial.data.xpos)
+                        expected = serial.state()
+                        self.assertEqual(state.root_linear_velocity_world_m_s,expected.root_linear_velocity_world_m_s)
+                        self.assertEqual(state.root_angular_velocity_world_rad_s,expected.root_angular_velocity_world_rad_s)
+                        self.assertAlmostEqual(pool.time[i],t,places=12)
 
     def test_serial_batch_full_evaluation_trace_and_failure_match(self):
         protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v1.json').read_text())
@@ -63,16 +69,8 @@ class BatchPhysicsTests(unittest.TestCase):
             result.pop('wall_time_s')
             return result, trace.getvalue()
         expected = run(World(PROFILE))
-        self.assertEqual(BatchPool(PROFILE, 2, 2).run(lambda slot, world: run(world)), [expected]*2)
+        self.assertEqual(run(VectorWorld(PROFILE)),expected)
 
-    def test_worker_exception_wakes_waiting_slots(self):
-        pool = BatchPool(PROFILE, 2, 1)
-        def fail(slot, world):
-            if slot == 1:
-                raise ValueError('adapter failed')
-            world.reset(motion(world))
-        with self.assertRaisesRegex(ValueError, 'adapter failed'):
-            pool.run(fail)
 
 
 if __name__ == '__main__':

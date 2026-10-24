@@ -56,13 +56,11 @@ All three scores are produced for every model.
 
 The default engine is MuJoCo **3.17.0**, using official `mujoco.batch.Batch`
 with persistent, independent simulation slots. `--jobs` sets the slot count;
-`--threads` sets the CPU physics thread count (defaults to the slot count).
-Each slot owns its controller process, observation history and reference cache.
-Each slot receives a disjoint motion shard and leaves the batch when finished.
-Reference processing and scoring run in independent processes to avoid Python
-thread contention; only PD commands and generalized state cross physics IPC. PD is recomputed every 2 ms, and the exact
-fractional endpoint is retained. Batch does not change author inference clocks,
-physics, failures or scoring.
+`--threads` sets CPU physics threads, bounded to eight and available CPUs by default.
+Core and policy run in the same process. Each slot owns its history and reference
+cache; completed slots take the next longest motion. PD is recomputed every
+2 ms, including the exact fractional endpoint. This scheduling does not change
+author inference clocks, physics, failure conditions or scoring.
 
 The public evaluator supports only MuJoCo 3.17.0 batch. The two bundled
 protocols select early termination or full-motion continuation. Internal
@@ -90,7 +88,7 @@ metric timing, reference data, or failure rules.
 Every controller uses the [proprioceptive observation contract](OBSERVATIONS.md).
 Acceptance requires exact checkpoint provenance, author-inference comparison,
 two complete repeatable evaluations and independent trajectory verification.
-Dataclasses and subprocesses are not a hostile-code security sandbox; a public
+The in-process SDK is not a hostile-code security sandbox; a public
 submission also requires source review and a controlled rerun.
 
 No checkpoint retraining is required by the interface. Training overlap must be

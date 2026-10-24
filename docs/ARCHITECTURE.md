@@ -6,15 +6,14 @@ src/motion_challenge/
   data/           # dataset integrity and reference interpolation
   simulation/     # robot physics and MuJoCo CPU batch
   evaluation/     # rollout, metrics, trace verification and result assembly
-  runtime/        # artifacts, adapter workers, CLI and progress
+  runtime/        # artifacts, adapter calls, CLI and progress
   adapters/       # optional ONNX inference utilities
   resources.py    # packaged benchmark assets
   validation.py   # shared hashes and contract checks
 ```
 
 The root `entrypoint`, `physics`, `run`, `verify`, `merge` and `cli` modules are
-small compatibility entrypoints. Existing model repositories keep their imports
-and commands; implementation lives in the directories above.
+small command entrypoints; implementation lives in the directories above.
 
 ## Core rules, flexible controllers
 
@@ -41,3 +40,28 @@ rules of an existing ranking.
 
 These interfaces are not a hostile-code sandbox. Public acceptance also requires
 source review, author-inference comparison and an independent repeat evaluation.
+
+## Batch execution
+
+`simulation/batch_dispatch.py` runs a single event loop over independent clip
+state machines. One `VectorPhysics` owns the native MuJoCo batch; its CPU thread
+count is independent of slot count. A longest-first queue refills completed
+slots. Motion data and reference caches are retained only for active clips.
+
+`runtime/policy.py` calls the adapter directly in the same process. Packet
+adapters receive immutable SDK values; array adapters receive read-only numeric
+views. Only approved proprioception and references are provided. Simulator
+handles, measured translation, contacts, failures and scores stay inside Core.
+An adapter that needs a separate inference service owns that connection.
+
+This follows the vector reset/step organization used by
+[Isaac Lab](https://github.com/isaac-sim/IsaacLab) and
+[mjlab](https://github.com/mujocolab/mjlab), with official MuJoCo CPU batch as the
+physics backend. Completed clips refill independently. Metrics use refreshed
+post-step kinematics, and failed motions continue to their end in the default
+full-trajectory evaluation. These benchmark semantics are unchanged.
+
+Metric accumulation, asynchronous compressed trace writing and progress output
+are bounded per active clip. Verification workers are capped by CPU availability
+and receive one clip's metadata, not repeated copies of the complete dataset.
+The default command uses this executor at one slot and at thousands of slots.

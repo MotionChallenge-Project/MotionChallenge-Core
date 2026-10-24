@@ -37,7 +37,8 @@ def create(root, config): return Policy(config.get('fail',False))
                        '--data',str(root),'--batch-size','2']
             env = dict(os.environ, PYTHONPATH=str(ROOT/'src'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
             for mode in ('serial','batch'):
-                result = subprocess.run(command+['--backend',mode,'--output',str(root/(mode+'.json'))],
+                runner = ([sys.executable,str(ROOT/'tests/scalar_oracle.py'),*command[3:]] if mode=='serial' else command)
+                result = subprocess.run(runner+['--output',str(root/(mode+'.json'))],
                                         env=env,capture_output=True,text=True,timeout=40)
                 self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             serial = json.loads((root/'serial.json').read_text());batch = json.loads((root/'batch.json').read_text())

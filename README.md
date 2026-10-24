@@ -35,6 +35,7 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 
 [Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
 [Add a benchmark](docs/BENCHMARKS.md) ·
+[Batch evaluation](docs/BATCHING.md) ·
 [Code layout](docs/ARCHITECTURE.md) ·
 [Website](https://motionchallenge-project.github.io/motionchallenge/) ·
 [Project](https://github.com/MotionChallenge-Project)

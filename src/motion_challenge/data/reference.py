@@ -4,6 +4,8 @@ from bisect import bisect_right
 from dataclasses import dataclass
 import math
 
+import numpy as np
+
 from motion_challenge.sdk import ReferenceFrame, Vector
 
 
@@ -17,7 +19,7 @@ def normalize_quaternion(q: Vector) -> Vector:
 
 
 def slerp(a: Vector, b: Vector, fraction: float) -> Vector:
-    a, b = normalize_quaternion(a), normalize_quaternion(b)
+    a, b = normalize_quaternion(tuple(map(float,a))), normalize_quaternion(tuple(map(float,b)))
     dot = sum(x*y for x, y in zip(a, b))
     if dot < 0:
         b, dot = tuple(-x for x in b), -dot
@@ -48,11 +50,24 @@ class Motion:
         for values, width in ((self.joint_positions_rad, len(self.joint_names)),
                               (self.root_positions_world_m, 3),
                               (self.root_orientations_xyzw, 4)):
+            if isinstance(values,np.ndarray):
+                if values.shape != (n,width):
+                    raise ValueError("inconsistent motion shape")
+                if not np.isfinite(values).all():
+                    raise ValueError("non-finite motion value")
+                continue
             if len(values) != n or any(len(row) != width for row in values):
                 raise ValueError("inconsistent motion shape")
             if not all(math.isfinite(x) for row in values for x in row):
                 raise ValueError("non-finite motion value")
-        if any(abs(sum(x*x for x in q)-1) > 1e-3 for q in self.root_orientations_xyzw):
+        q = self.root_orientations_xyzw
+        if isinstance(q,np.ndarray):
+            squared=q*q
+            norms=((squared[:,0]+squared[:,1])+squared[:,2])+squared[:,3]
+            invalid=(np.abs(norms-1)>1e-3).any()
+        else:
+            invalid=any(abs(sum(x*x for x in row)-1)>1e-3 for row in q)
+        if invalid:
             raise ValueError("quaternion norm outside tolerance")
 
     @property
@@ -67,6 +82,8 @@ class Motion:
         hi = lo + 1
         alpha = (t-self.times_s[lo])/(self.times_s[hi]-self.times_s[lo])
         def interpolate(values):
+            if isinstance(values,np.ndarray):
+                return tuple((values[lo]+alpha*(values[hi]-values[lo])).tolist())
             return tuple(a + alpha*(b-a) for a, b in zip(values[lo], values[hi]))
         return ReferenceFrame(requested_time_s, t, interpolate(self.joint_positions_rad),
                               interpolate(self.root_positions_world_m),

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 import mujoco
 import numpy as np
-from motion_challenge.simulation.batch_physics import BatchPool, Request
+from motion_challenge.simulation.vector_physics import VectorPhysics
 from motion_challenge.physics import World, command_values
 from motion_challenge.sdk import ControlCommand
 
@@ -22,8 +22,8 @@ class NumericalResetTests(unittest.TestCase):
         self.assertEqual(world.model.opt.timestep,.002)
 
     def test_batch_automatic_reset_is_rejected(self):
-        pool=BatchPool(ROOT/'robots/g1-29dof-cpu-v0.json',1)
+        pool=VectorPhysics(ROOT/'robots/g1-29dof-cpu-v0.json',1)
         pool.time[0]=.1;pool.qvel[0,0]=1e20
         with tempfile.TemporaryDirectory() as folder, chdir(folder):
             with self.assertRaisesRegex(FloatingPointError,'reset or discontinuous'):
-                pool._execute({0:Request('advance',command_values(ZERO,29),.12)})
+                pool.advance([0],[ZERO],[.12])

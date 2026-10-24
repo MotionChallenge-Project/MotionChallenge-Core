@@ -1,4 +1,4 @@
-"""Core-owned observation boundary, applied before adapter serialization."""
+"""Core-owned observation allowlist, applied before calling the adapter."""
 from dataclasses import fields
 
 from motion_challenge.sdk import ProprioceptiveStatePacket

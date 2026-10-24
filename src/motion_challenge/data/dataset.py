@@ -1,10 +1,11 @@
 """Generic headerless configuration-CSV audit driven entirely by a manifest."""
 
-import csv
 import math
 from pathlib import Path
 import urllib.parse
 import urllib.request
+
+import numpy as np
 
 from motion_challenge.runtime.progress import Progress, copy_download
 from motion_challenge.data.reference import Motion
@@ -44,19 +45,19 @@ def fetch_dataset(manifest, root, progress=None):
 def load_csv_motion(path, joint_names, fps):
     if not math.isfinite(fps) or fps <= 0:
         raise ValueError("source FPS must be positive")
-    rows = []
-    with path.open(newline="") as stream:
-        for number, row in enumerate(csv.reader(stream), 1):
-            try:
-                values = tuple(float(x) for x in row)
-            except ValueError as exc:
-                raise ValueError(f"invalid numeric row {number} in {path.name}") from exc
-            if len(values) != 7 + len(joint_names):
-                raise ValueError(f"unexpected column count at row {number} in {path.name}")
-            rows.append(values)
-    return Motion(tuple(joint_names), tuple(i/fps for i in range(len(rows))),
-                  tuple(row[7:] for row in rows), tuple(row[:3] for row in rows),
-                  tuple(row[3:7] for row in rows))
+    def rows(stream):
+        for number,line in enumerate(stream,1):
+            if not line.strip():
+                raise ValueError(f'empty numeric row {number} in {path.name}')
+            yield line
+    with path.open() as stream:
+        values = np.loadtxt(rows(stream), delimiter=',', comments=None, quotechar='"',
+                            dtype=np.float64, ndmin=2)
+    if values.shape[1] != 7+len(joint_names):
+        raise ValueError('unexpected motion column count')
+    values.flags.writeable = False
+    return Motion(tuple(joint_names), tuple(i/fps for i in range(len(values))),
+                  values[:,7:], values[:,:3], values[:,3:7])
 
 
 def audit_dataset(manifest, root):

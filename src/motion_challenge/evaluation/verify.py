@@ -4,6 +4,7 @@ Trace consistency is not a signature, sandbox attestation or proof of physical
 execution. Official acceptance requires an independent rerun as well.
 """
 import argparse
+from motion_challenge.evaluation.accumulator import MetricAccumulator
 import copy
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
@@ -41,15 +42,15 @@ def _verify_clip(task):
     trace = confined_path(result_directory, clip['trace']['path'])
     if sha256_file(trace) != clip['trace']['sha256']:
         raise ValueError('pose trace hash mismatch')
-    samples, last_valid, failure, last_time = [], 0.0, [], 0.0
+    samples, last_valid, failure, last_time = MetricAccumulator(), 0.0, [], 0.0
     first_failure_time = None
-    prefix_count = None
+    prefix_count, prefix_means, prefix_last = None, None, None
     limit = clip['trace'].get('sample_limit')
     if limit is not None and (not terminate_on_failure or type(limit) is not int or limit < 1):
         raise ValueError('invalid trace prefix sample limit')
     with gzip.open(trace, 'rt') as stream:
         for line in stream:
-            if limit is not None and len(samples) >= limit:
+            if limit is not None and samples.count >= limit:
                 break
             if len(line) > 100000 or (failure and terminate_on_failure):
                 raise ValueError('invalid pose trace or continued after failure')
@@ -62,7 +63,7 @@ def _verify_clip(task):
                 raise ValueError('invalid recorded quaternion')
             if not last_time < t <= motion.duration_s+1e-9:
                 raise ValueError('pose timestamps are out of order/range')
-            expected = min((len(samples)+1)*protocol['metric_period_s'], motion.duration_s)
+            expected = min((samples.count+1)*protocol['metric_period_s'], motion.duration_s)
             if not clip['truncated_smoke'] and not math.isclose(t,expected,abs_tol=1e-8):
                 raise ValueError('missing or shifted metric timestamp')
             frame = ReferenceFrame(t,t,tuple(p['joint_position_rad']),
@@ -75,14 +76,16 @@ def _verify_clip(task):
             if current_failure and first_failure_time is None:
                 failure = current_failure
                 first_failure_time = t
-                prefix_count = len(samples)+1
-            samples.append(metrics)
-            if len(samples) % 100 == 0:
+                prefix_count = samples.count+1
+            samples.add(metrics)
+            if prefix_count == samples.count:
+                prefix_means, prefix_last = samples.means(), samples.last
+            if samples.count % 100 == 0:
                 progress.emit('verification_clip', clip=clip['id'],
-                              samples=len(samples), total_samples=clip['sample_count'], time_s=t)
+                              samples=samples.count, total_samples=clip['sample_count'], time_s=t)
             if not failure: last_valid = t
             last_time = t
-    if not samples or len(samples) != clip['sample_count']:
+    if not samples.count or samples.count != clip['sample_count']:
         raise ValueError('trace sample count mismatch')
     success = not failure and last_valid >= motion.duration_s-1e-9
     if not failure and not clip['truncated_smoke'] and not success:
@@ -97,31 +100,32 @@ def _verify_clip(task):
         raise ValueError('observed duration mismatch')
     if not failure_time_matches(clip['failure_time_s'], first_failure_time, bool(failure)):
         raise ValueError('failure timestamp mismatch')
-    if set(clip['metric_means_over_observed_prefix']) != set(samples[0]):
+    if set(clip['metric_means_over_observed_prefix']) != set(samples.partials):
         raise ValueError('missing or extra protocol metrics')
     for k, recorded in clip['metric_means_over_observed_prefix'].items():
-        actual = math.fsum(s[k] for s in samples)/len(samples)
+        actual = samples.means()[k]
         if not math.isclose(actual,recorded,abs_tol=1e-9,rel_tol=1e-7):
             raise ValueError(f'{k} recomputation mismatch')
     derived = None
     if derive_prefix:
-        count = prefix_count or len(samples)
+        count = prefix_count or samples.count
         terminal_time = first_failure_time if failure else last_time
         item = {**clip, 'sample_count': count,
                 'observed_time_s': clip['failure_time_s'] if failure else clip['observed_time_s'],
-                'metric_means_over_observed_prefix': {
-                    k: math.fsum(s[k] for s in samples[:count])/count for k in samples[0]},
-                'last_sample': {'time_s': terminal_time, **samples[count-1]},
+                'metric_means_over_observed_prefix': prefix_means or samples.means(),
+                'last_sample': {'time_s': terminal_time, **(prefix_last or samples.last)},
                 'trace': {**clip['trace'], 'sample_limit': count}}
         item.pop('wall_time_s', None)  # No second physical rollout took place.
         derived = item
-    return {'samples': len(samples), 'prefix': derived}
+    return {'samples': samples.count, 'prefix': derived}
 
 
 def verify(result_path, suite_path, robot_path, protocol_path, data_root, controller_path,
            prefix_result_path=None, prefix_protocol_path=None, jobs=1):
     result_path = Path(result_path)
     result = json.loads(result_path.read_text())
+    if result.get('traces_recorded') is False:
+        raise ValueError('no recorded trajectory to verify')
     if result.get('status') != 'completed':
         raise ValueError('run did not complete')
     for key, path in [('suite_sha256',suite_path),('robot_profile_sha256',robot_path),
@@ -175,9 +179,11 @@ def verify(result_path, suite_path, robot_path, protocol_path, data_root, contro
         raise ValueError('verification jobs must be positive')
     progress = Progress()
     checked_samples = 0
-    tasks = [(clip, files[clip['id']], manifest, robot_path, protocol, data_root,
+    motion_layout = {key: manifest[key] for key in ('joint_names', 'source_fps')}
+    tasks = [(clip, files[clip['id']], motion_layout, robot_path, protocol, data_root,
               result_path.parent, prefix is not None) for clip in result['clips']]
-    workers = min(jobs, len(tasks))
+    from motion_challenge.simulation.vector_physics import cpu_count
+    workers = min(jobs, len(tasks), cpu_count())
     def collect(records):
         nonlocal checked_samples
         for index, record in enumerate(records):

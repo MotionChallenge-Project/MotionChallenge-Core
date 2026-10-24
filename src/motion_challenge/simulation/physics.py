@@ -3,12 +3,14 @@ from collections import OrderedDict
 from dataclasses import replace
 import json
 from pathlib import Path
+import time
 
 import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from motion_challenge.sdk import BodyState, StatePacket
+from motion_challenge.sdk import StatePacket
+from motion_challenge.data.bodies import BodyArray
 from motion_challenge.validation import sha256_file
 
 
@@ -55,8 +57,16 @@ class World:
             if self.model.actuator_trnid[i, 0] != self.model.joint(name).id:
                 raise ValueError('canonical actuator order mismatch')
         self.body_ids = tuple(range(1, self.model.nbody))
+        self.body_indices = np.array(self.body_ids)
+        self.body_names = tuple(self.model.body(i).name for i in self.body_ids)
+        self.body_roots = self.model.body_rootid[self.body_indices].copy()
+        self.root_body_id = self.model.body(self.profile['root_body']).id
+        self.root_body_row = self.body_ids.index(self.root_body_id)
         self._reference_cache = OrderedDict()
         self.motion = None
+        self.reference_work = dict(frames=0,interpolation_s=0.,differentiate_s=0.,
+            fk_native_s=0.,body_velocity_native_s=0.,body_velocity_arrays_s=0.,body_storage_s=0.)
+        self.trace_work = dict(samples=0,metric_accumulation_s=0.,json_encoding_s=0.,buffer_submit_s=0.)
 
     def _qpos(self, frame):
         q = self.model.qpos0.copy()
@@ -67,22 +77,39 @@ class World:
         return q
 
     def _bodies(self, data):
-        # Jacobians are at body origins, not centers of mass.
+        # comVel computes all spatial velocities once. Shift their origins from
+        # subtree COMs to body origins; angular/linear axes remain world axes.
+        # This is the mj_objectVelocity(mjOBJ_XBODY, local=0) convention.
+        started = time.perf_counter()
+        mujoco.mj_comVel(self.model, data)
+        self.reference_work['body_velocity_native_s'] += time.perf_counter()-started
+        started = time.perf_counter()
+        bids = self.body_indices
+        velocity = data.cvel[bids].copy()
+        position = data.xpos[bids]
+        velocity[:, 3:] += np.cross(velocity[:, :3], position-data.subtree_com[self.body_roots])
+        # Keep the published root-measurement arithmetic identical to the
+        # simulation reader. Other body velocities use the equivalent spatial shift.
+        self.reference_work['body_velocity_arrays_s'] += time.perf_counter()-started
+        started = time.perf_counter()
         jp, jr = np.empty((3, self.model.nv)), np.empty((3, self.model.nv))
-        result = []
-        for bid in self.body_ids:
-            mujoco.mj_jacBody(self.model, data, jp, jr, bid)
-            q = data.xquat[bid]
-            result.append(BodyState(self.model.body(bid).name,
-                tuple(data.xpos[bid]), (q[1], q[2], q[3], q[0]),
-                tuple(jp @ data.qvel), tuple(jr @ data.qvel)))
-        return tuple(result)
+        mujoco.mj_jacBody(self.model, data, jp, jr, self.root_body_id)
+        velocity[self.root_body_row, 3:] = jp @ data.qvel
+        velocity[self.root_body_row, :3] = jr @ data.qvel
+        self.reference_work['body_velocity_native_s'] += time.perf_counter()-started
+        started = time.perf_counter()
+        orientation = data.xquat[bids][:, [1, 2, 3, 0]]
+        result = BodyArray(self.body_names, np.concatenate(
+            (position, orientation, velocity[:,3:], velocity[:,:3]), axis=1))
+        self.reference_work['body_storage_s'] += time.perf_counter()-started
+        return result
 
     def reference(self, requested_time_s):
         key = round(float(requested_time_s), 12)
         if key in self._reference_cache:
             self._reference_cache.move_to_end(key)
             return self._reference_cache[key]
+        started = time.perf_counter()
         f = self.motion.sample(key)
         t = f.source_time_s
         # Centered finite difference in generalized coordinates over one source
@@ -93,16 +120,22 @@ class World:
         qb = self._qpos(self.motion.sample(hi))
         d = self.reference_data
         d.qpos[:] = self._qpos(f)
+        self.reference_work['interpolation_s'] += time.perf_counter()-started
+        started = time.perf_counter()
         mujoco.mj_differentiatePos(self.model, d.qvel, hi-lo, qa, qb)
+        self.reference_work['differentiate_s'] += time.perf_counter()-started
+        started = time.perf_counter()
         forward_kinematics(self.model, d)
+        self.reference_work['fk_native_s'] += time.perf_counter()-started
+        self.reference_work['frames'] += 1
         bodies = self._bodies(d)
-        root = next(b for b in bodies if b.name == self.profile['root_body'])
+        root = bodies[self.root_body_row]
         f = replace(f, joint_velocity_rad_s=tuple(d.qvel[self.vadr]),
                     root_linear_velocity_world_m_s=root.linear_velocity_world_m_s,
                     root_angular_velocity_world_rad_s=root.angular_velocity_world_rad_s,
                     bodies=bodies)
         self._reference_cache[key] = f
-        if len(self._reference_cache) > 2048:
+        if len(self._reference_cache) > getattr(self, 'reference_cache_capacity', 2048):
             self._reference_cache.popitem(last=False)
         return f
 
@@ -121,7 +154,7 @@ class World:
     def state(self):
         d = self.data
         bodies = self._bodies(d)
-        root = next(b for b in bodies if b.name == self.profile['root_body'])
+        root = bodies[self.root_body_row]
         return StatePacket(float(d.time), self.joint_names,
             tuple(d.qpos[self.qadr]), tuple(d.qvel[self.vadr]),
             root.position_world_m, root.orientation_xyzw,

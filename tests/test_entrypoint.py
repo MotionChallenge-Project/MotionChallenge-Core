@@ -102,8 +102,8 @@ class SourceLayoutTests(unittest.TestCase):
                         '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture'], check=True)
         return subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'], text=True).strip()
 
-    def test_core_identity_and_dirty_state_in_both_layouts(self):
-        for name in ('MotionChallenge-Core', 'motion-challenge'):
+    def test_core_identity_and_dirty_state(self):
+        for name in ('MotionChallenge-Core',):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
                 root=Path(directory)/'adapter';self.init_repo(root)
                 core=root/name;revision=self.init_repo(core)
@@ -112,12 +112,11 @@ class SourceLayoutTests(unittest.TestCase):
                 (core/'fixture.txt').write_text('changed core')
                 self.assertTrue(source_snapshot(root)['core_dirty'])
 
-    def test_ambiguous_or_missing_core_is_rejected(self):
+    def test_missing_or_old_layout_core_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);self.init_repo(root)
-            with self.assertRaisesRegex(ValueError, 'one core submodule'):
+            with self.assertRaisesRegex(ValueError,'MotionChallenge-Core'):
                 source_snapshot(root)
-            for name in ('MotionChallenge-Core', 'motion-challenge'):
-                self.init_repo(root/name)
-            with self.assertRaisesRegex(ValueError, 'one core submodule'):
+            self.init_repo(root/'motion-challenge')
+            with self.assertRaisesRegex(ValueError,'MotionChallenge-Core'):
                 source_snapshot(root)

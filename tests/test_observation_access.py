@@ -8,9 +8,8 @@ import numpy as np
 
 from motion_challenge.adapters.kinematics import KinematicStateView
 from motion_challenge.resources import lafan_paths
-from motion_challenge.runtime.encoding import RequestEncoder
+from motion_challenge.runtime.policy import ArrayInputs
 from motion_challenge.runtime.observations import PROPRIOCEPTIVE, controller_state, validate_access
-from motion_challenge.runtime.worker import packet
 from motion_challenge.sdk import StatePacket, ProprioceptiveStatePacket
 from motion_challenge.simulation.physics import World, forward_kinematics
 
@@ -29,19 +28,16 @@ class ObservationAccessTests(unittest.TestCase):
                         bodies=tuple(replace(b,position_world_m=(123.,456.,789.)) for b in state.bodies))
         a=controller_state(state,PROPRIOCEPTIVE); b=controller_state(changed,PROPRIOCEPTIVE)
         self.assertEqual(a,b)
-        for operation in ('reset','act'):
-            payload=json.loads(RequestEncoder().request(operation,a,()))
-            self.assertEqual(set(payload['state']),set(asdict(a)))
-            self.assertNotIn('bodies',payload['state'])
-            self.assertNotIn('root_position_world_m',payload['state'])
-            decoded=packet(ProprioceptiveStatePacket,payload['state'])
-            self.assertIsInstance(decoded,ProprioceptiveStatePacket)
-            with self.assertRaises(TypeError):
-                packet(ProprioceptiveStatePacket,{**payload['state'],'root_position_world_m':[0,0,0]})
+        from motion_challenge.sdk import ReferenceFrame
+        ref=ReferenceFrame(0.,0.,a.joint_position_rad,(0.,0.,0.),a.root_orientation_xyzw,
+                           a.joint_velocity_rad_s,a.root_linear_velocity_world_m_s,a.root_angular_velocity_world_rad_s)
+        buffer=ArrayInputs(dict(capacity=1,slots=1,frames=1,joints=a.joint_names,bodies=[]))
+        buffer.put(0,a,(ref,)); inputs,_=buffer.get_arrays(1)
+        np.testing.assert_array_equal(inputs.joint_position_rad[0],a.joint_position_rad)
+        self.assertFalse(hasattr(inputs,'root_position_world_m'))
+        with self.assertRaises(ValueError):buffer.put(0,state,(ref,))
 
     def test_unknown_schema_and_access_mismatch_fail_closed(self):
-        with self.assertRaises(ValueError): packet(ProprioceptiveStatePacket,{'schema':'unknown'})
-        with self.assertRaises(ValueError): packet(ProprioceptiveStatePacket,asdict(self.fixture()))
         with self.assertRaises(ValueError): validate_access({'state_access':PROPRIOCEPTIVE},{})
         with self.assertRaises(ValueError): validate_access({'state_access':'unknown'},{})
         for obsolete in ({}, {'state_access':'privileged-state-v0'}):

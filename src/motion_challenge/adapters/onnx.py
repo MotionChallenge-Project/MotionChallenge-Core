@@ -1,11 +1,30 @@
 """Small SDK-native ONNX/PD utility; no model registry or external deployment stack."""
 import json
 import re
+import weakref
 import numpy as np
 import onnxruntime as ort
 from scipy.spatial.transform import Rotation as R
 from motion_challenge.sdk import ControlCommand
 from motion_challenge.validation import sha256_file
+
+
+_sessions = weakref.WeakValueDictionary()
+
+
+def cpu_session(weights, expected_hash):
+    """Share an immutable, verified graph; controller histories remain separate."""
+    key = (str(weights.resolve()), expected_hash)
+    session = _sessions.get(key)
+    if session is None:
+        if sha256_file(weights) != expected_hash:
+            raise ValueError('checkpoint checksum mismatch')
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = options.inter_op_num_threads = 1
+        session = ort.InferenceSession(str(weights), sess_options=options,
+                                       providers=['CPUExecutionProvider'])
+        _sessions[key] = session
+    return session
 
 
 def vector(value,names,default=0.):
@@ -42,9 +61,7 @@ class ONNXController:
         if sha256_file(config_path)!=runtime['inference_config_sha256']:raise ValueError('config checksum mismatch')
         self.cfg=json.loads(config_path.read_text())
         weights=root/runtime['weights']
-        if sha256_file(weights)!=runtime['weights_sha256']:raise ValueError('checkpoint checksum mismatch')
-        options=ort.SessionOptions();options.intra_op_num_threads=1;options.inter_op_num_threads=1
-        self.session=ort.InferenceSession(str(weights),sess_options=options,providers=['CPUExecutionProvider'])
+        self.session=cpu_session(weights,runtime['weights_sha256'])
         self.names=self.cfg['policy_joint_names']
         self.default=vector(self.cfg['default_joint_pos'],self.names)
         self.scale=vector(self.cfg['action_scale'],self.names,1.)

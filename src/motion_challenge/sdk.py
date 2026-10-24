@@ -1,7 +1,7 @@
 """Transport-neutral single-environment API; arrays use named joint order.
 
 These frozen value objects are an API contract, NOT a security sandbox.
-The development worker separates processes, but is NOT an OS security sandbox.
+The adapter runs in the evaluator process; no simulator handles are supplied.
 All units are SI; quaternions are xyzw; world is right-handed, z-up.
 """
 
@@ -45,7 +45,7 @@ class StatePacket:
     root_linear_velocity_world_m_s: Vector
     root_angular_velocity_world_rad_s: Vector
     bodies: tuple[BodyState, ...] = ()
-    # Internal physics/scoring state; never sent to controller workers.
+    # Internal physics/scoring state; never supplied to controllers.
     # Adapter FK may also construct this geometry container at a synthetic origin.
 
 
@@ -117,3 +117,57 @@ class BatchController(Protocol):
 
     def close(self) -> None:
         ...
+
+
+@dataclass(frozen=True)
+class StateBatch:
+    """Read-only NumPy views. First axis follows slots; copy retained histories."""
+    joint_names: tuple[str, ...]
+    time_s: object                         # [N]
+    joint_position_rad: object             # [N, J]
+    joint_velocity_rad_s: object           # [N, J]
+    root_orientation_xyzw: object          # [N, 4]
+    root_linear_velocity_world_m_s: object # [N, 3]
+    root_angular_velocity_world_rad_s: object # [N, 3]
+
+
+@dataclass(frozen=True)
+class ReferenceBatch:
+    """Read-only views of the same approved references, [N, K, ...]."""
+    requested_time_s: object
+    source_time_s: object
+    joint_position_rad: object
+    root_position_world_m: object
+    root_orientation_xyzw: object
+    joint_velocity_rad_s: object
+    root_linear_velocity_world_m_s: object
+    root_angular_velocity_world_rad_s: object
+    body_names: tuple[str, ...]
+    body_position_world_m: object           # [N, K, B, 3]
+    body_orientation_xyzw: object           # [N, K, B, 4]
+    body_linear_velocity_world_m_s: object  # [N, K, B, 3]
+    body_angular_velocity_world_rad_s: object # [N, K, B, 3]
+
+
+@dataclass(frozen=True)
+class ControlBatch:
+    """Each field is a finite [N, J] array in the supplied joint order."""
+    joint_position_target_rad: object
+    joint_velocity_target_rad_s: object
+    kp_nm_rad: object
+    kd_nm_s_rad: object
+    feedforward_torque_nm: object
+
+
+class ArrayBatchController(Protocol):
+    """Optional array_batch_entrypoint: no per-sample packet reconstruction.
+
+    Views expire after each call; copy anything needed for history. Slots can
+    be reordered or partially reset. Engine, device, padding and sub-batching
+    remain entirely adapter-owned, as for BatchController.
+    """
+    def reset_batch(self, slots: tuple[int, ...], states: StateBatch,
+                    references: ReferenceBatch, seeds: tuple[int, ...]) -> None: ...
+    def act_batch(self, slots: tuple[int, ...], states: StateBatch,
+                  references: ReferenceBatch) -> ControlBatch: ...
+    def close(self) -> None: ...

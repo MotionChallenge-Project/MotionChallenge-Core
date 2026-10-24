@@ -2,6 +2,16 @@
 import math
 
 
+def online_prefix(full, protocol, protocol_sha256):
+    """Use the online first-failure snapshot; this does not verify a trajectory."""
+    clips = [{**clip,**clip['metric_prefix']} for clip in full['clips']]
+    return {**full,'clips':clips,'protocol_id':protocol['id'],'protocol_sha256':protocol_sha256,
+        'termination_mode':'early_termination','metric_scope':'observed_prefix',
+        'macro_metrics_over_observed_prefix':{
+            key:math.fsum(c['metric_means_over_observed_prefix'][key] for c in clips)/len(clips)
+            for key in clips[0]['metric_means_over_observed_prefix']}}
+
+
 def combine(early, full, source, checkpoint_sha256):
     for key in ('controller_id', 'controller_config_sha256', 'suite_sha256',
                 'robot_profile_sha256', 'mujoco_version', 'backend'):

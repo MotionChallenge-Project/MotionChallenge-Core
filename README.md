@@ -53,7 +53,7 @@ If you use MotionChallenge in your research, please cite:
   author       = {{MotionChallenge Team}},
   title        = {{MotionChallenge}: An Open, Reproducible Benchmark for Humanoid Motion Tracking},
   year         = {2026},
-  howpublished = {\url{https://motionchallenge-project.github.io/motionchallenge/}}
+  url          = {https://motionchallenge-project.github.io/motionchallenge/}
 }
 ```
 

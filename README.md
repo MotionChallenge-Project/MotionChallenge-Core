@@ -1,7 +1,5 @@
 ![MotionChallenge Core — An open, reproducible benchmark for humanoid motion tracking.](docs/images/motionchallenge-banner.svg)
 
-<p align="center">📏 Shared rules &nbsp; · &nbsp; 🔍 Public code &nbsp; · &nbsp; 🔁 Reproducible results</p>
-
 <p align="center">
   <a href="https://motionchallenge-project.github.io/motionchallenge/">🏆 <b>Leaderboard</b></a> &nbsp; · &nbsp;
   <a href="https://motionchallenge-project.github.io/motionchallenge/models/">🤖 <b>Models</b></a> &nbsp; · &nbsp;

@@ -56,3 +56,5 @@ If you use MotionChallenge in your research, please cite:
   howpublished = {\url{https://motionchallenge-project.github.io/motionchallenge/}}
 }
 ```
+
+[Download BibTeX](CITATION.bib).

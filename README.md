@@ -1,7 +1,16 @@
+<img src="docs/images/motionchallenge.png" align="right" width="110" alt="MotionChallenge logo">
+
 # MotionChallenge Core
 
 An open, reproducible benchmark for humanoid motion tracking.
-A shared evaluator and independent model adapters.
+
+📏 Shared rules · 🔍 Public code · 🔁 Reproducible results
+
+[🏆 Leaderboard](https://motionchallenge-project.github.io/motionchallenge/) ·
+[🤖 Models](https://motionchallenge-project.github.io/motionchallenge/models/) ·
+[📖 Protocol](https://motionchallenge-project.github.io/motionchallenge/protocol/)
+
+<br clear="both">
 
 ## Install and run
 

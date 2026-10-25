@@ -1,16 +1,12 @@
-<img src="docs/images/motionchallenge.png" align="right" width="110" alt="MotionChallenge logo">
+![MotionChallenge Core — An open, reproducible benchmark for humanoid motion tracking.](docs/images/motionchallenge-banner.svg)
 
-# MotionChallenge Core
+<p align="center">📏 Shared rules &nbsp; · &nbsp; 🔍 Public code &nbsp; · &nbsp; 🔁 Reproducible results</p>
 
-An open, reproducible benchmark for humanoid motion tracking.
-
-📏 Shared rules · 🔍 Public code · 🔁 Reproducible results
-
-[🏆 Leaderboard](https://motionchallenge-project.github.io/motionchallenge/) ·
-[🤖 Models](https://motionchallenge-project.github.io/motionchallenge/models/) ·
-[📖 Protocol](https://motionchallenge-project.github.io/motionchallenge/protocol/)
-
-<br clear="both">
+<p align="center">
+  <a href="https://motionchallenge-project.github.io/motionchallenge/">🏆 <b>Leaderboard</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/models/">🤖 <b>Models</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/protocol/">📖 <b>Protocol</b></a>
+</p>
 
 ## Install and run
 

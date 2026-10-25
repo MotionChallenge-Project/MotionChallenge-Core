@@ -3,7 +3,8 @@
 <p align="center">
   <a href="https://motionchallenge-project.github.io/motionchallenge/">🏆 <b>Leaderboard</b></a> &nbsp; · &nbsp;
   <a href="https://motionchallenge-project.github.io/motionchallenge/models/">🤖 <b>Models</b></a> &nbsp; · &nbsp;
-  <a href="https://motionchallenge-project.github.io/motionchallenge/protocol/">📖 <b>Protocol</b></a>
+  <a href="https://motionchallenge-project.github.io/motionchallenge/protocol/">📖 <b>Protocol</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/submit/">📤 <b>Submit</b></a>
 </p>
 
 ## Install and run

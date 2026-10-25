@@ -43,3 +43,16 @@ Git. Each result identifies its dataset, robot, checkpoint and protocol.
 Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).
 
 All controllers use [ideal proprioception without global position feedback](docs/OBSERVATIONS.md).
+
+## Citation
+
+If you use MotionChallenge in your research, please cite:
+
+```bibtex
+@misc{motionchallenge2026,
+  author       = {{MotionChallenge Project}},
+  title        = {{MotionChallenge}: Reproducible Motion-Tracking Benchmarks},
+  year         = {2026},
+  howpublished = {\url{https://motionchallenge-project.github.io/motionchallenge/}}
+}
+```

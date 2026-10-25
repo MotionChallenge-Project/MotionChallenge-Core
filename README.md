@@ -50,8 +50,8 @@ If you use MotionChallenge in your research, please cite:
 
 ```bibtex
 @misc{motionchallenge2026,
-  author       = {{MotionChallenge Project}},
-  title        = {{MotionChallenge}: Reproducible Motion-Tracking Benchmarks},
+  author       = {{MotionChallenge Team}},
+  title        = {{MotionChallenge}: An Open Benchmark for Humanoid Motion Tracking},
   year         = {2026},
   howpublished = {\url{https://motionchallenge-project.github.io/motionchallenge/}}
 }

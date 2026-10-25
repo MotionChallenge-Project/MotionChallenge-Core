@@ -137,9 +137,9 @@ on identical sequences, including reset and motion endpoints. Record numerical
 tolerances and all intentional benchmark adaptations. A third-party export
 requires equivalence evidence to the original checkpoint.
 
-Full LAFAN40 completion, successful trace verification and author-inference
-parity are separate review gates. An author has not submitted or endorsed a
-result merely because their model is used. Record the actual submitter.
+Complete evaluation of every motion in the selected suite, successful trace
+verification and author-inference parity are separate review gates. An author
+has not submitted or endorsed a result merely because their model is used. Record the actual submitter.
 Benchmark physics remains fixed; author inference parity does not imply the
 benchmark reproduces the author's training simulator or paper scores.
 

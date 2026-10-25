@@ -2,9 +2,10 @@
 
 ## Evaluation semantics
 
-All 40 source clips are retained, hash checked and evaluated from their first
-frame to the exact final source timestamp. Source FPS is 30. Position and joint
-angles are linearly interpolated, orientation uses shortest-path SLERP.
+All motions in the selected suite are retained, hash checked and evaluated with
+the same policy and checkpoint, from the first frame to the exact final source
+timestamp. Motion count and source FPS come from the suite manifest. Position and
+joint angles are linearly interpolated; orientation uses shortest-path SLERP.
 Generalized velocities use a centered source-interval difference, one-sided at
 endpoints. FK and body-origin velocity use the pinned canonical robot.
 Requested past/future reference timestamps clamp at the endpoints independently;
@@ -12,7 +13,8 @@ lookahead does not shorten the episode. Preview and reference history are declar
 in seconds. Actual observation history belongs to the controller and resets at
 each episode.
 
-Nominal evaluation uses no observation noise or randomization and friction 1.
+The bundled nominal protocol uses no observation noise or randomization and
+friction 1. Each benchmark pins its robot, physics and protocol settings.
 PD is evaluated and saturated every physics step. Metrics compare post-physics
 state to the reference at the same timestamp. Policy frequency may differ by
 checkpoint; scoring uses a common clock and always checks the final transition.
@@ -28,19 +30,19 @@ explicitly marked and cannot count as full-suite success.
 
 ### Three position alignment modes
 
-The protocol scores the same 14 body origins and timestamps in
-all three modes. Values are mean Euclidean distances in metres (multiply by
+The protocol declares the scored body origins. All three modes use the same
+bodies and timestamps. Values are mean Euclidean distances in metres (multiply by
 1000 to display mm), not component-wise MAE or joint-angle errors.
 
 | Result field | Scoring transform | Errors retained |
 | --- | --- | --- |
-| `mpjpe_xy_yaw_aligned_m` | Centre each pelvis XY; align pelvis heading | Height, tilt and articulated pose |
-| `mpjpe_xy_aligned_m` | Centre each pelvis XY | Heading, height, tilt and articulated pose |
+| `mpjpe_xy_yaw_aligned_m` | Centre each root XY; align root heading | Height, tilt and articulated pose |
+| `mpjpe_xy_aligned_m` | Centre each root XY | Heading, height, tilt and articulated pose |
 | `mpjpe_world_m` | None, including no initial fitted transform | Global trajectory and pose |
 
-Yaw alignment uses the closest world-Z rotation between the two pelvis
+Yaw alignment uses the closest world-Z rotation between the two root
 orientations, rather than Euler yaw extraction or a best fit to keybody points.
-This remains defined when both pelvis forward axes are vertical. An opposite-tilt
+This remains defined when both root forward axes are vertical. An opposite-tilt
 singularity uses zero correction, retains the sample and reports
 `yaw_alignment_degenerate_fraction`; this fraction must accompany affected scores.
 No mode aligns world Z, roll/pitch, scale or time. Alignment only transforms
@@ -56,11 +58,12 @@ All three scores are produced for every model.
 
 The default engine is MuJoCo **3.17.0**, using official `mujoco.batch.Batch`
 with persistent, independent simulation slots. `--jobs` sets the slot count;
-`--threads` sets CPU physics threads, bounded to eight and available CPUs by default.
+`--threads` sets CPU physics threads; defaults depend on slot count and available
+CPUs (see [batching](BATCHING.md)).
 Core and policy run in the same process. Each slot owns its history and reference
-cache; completed slots take the next longest motion. PD is recomputed every
-2 ms, including the exact fractional endpoint. This scheduling does not change
-author inference clocks, physics, failure conditions or scoring.
+cache; completed slots take the next longest motion. PD is recomputed at every
+configured physics step, including the exact fractional endpoint. Scheduling does
+not change author inference clocks, physics, failure conditions or scoring.
 
 The public evaluator supports only MuJoCo 3.17.0 batch. The two bundled
 protocols select early termination or full-motion continuation. Internal
@@ -93,8 +96,8 @@ submission also requires source review and a controlled rerun.
 
 No checkpoint retraining is required by the interface. Training overlap must be
 disclosed; inference-only testing does not imply an unseen dataset.
-Dataset files remain upstream under their own terms:
-https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset
+Dataset files remain upstream under their own terms. Each suite manifest records
+its source revision and file hashes; see [benchmark setup](BENCHMARKS.md).
 
 Result verification is also in the core: `uv run motionchallenge-verify` takes
 the result, suite, robot, protocol, dataset cache and controller configuration.
@@ -111,8 +114,8 @@ produces tracking errors both until that failure (inclusive) and over the entire
 motion. Later recovery does not erase a failure; no reset or reference shift is
 introduced. Inference errors and invalid numerics invalidate the run.
 
-MPBPE is the mean Euclidean error over 14 named body origins, averaged over time
-and then equally over clips. Each time range has three alignment views, giving
-six values in one `result.json`. The JSON keys retain `mpjpe_*_m` for compatibility;
+MPBPE is the mean Euclidean error over the protocol’s declared body origins,
+averaged over samples within each motion and then equally over motions. Each
+time range has three alignment views, giving six values in one `result.json`. The JSON keys retain `mpjpe_*_m` for compatibility;
 the website displays millimeters. `--termination early` and `--termination none`
 are diagnostic options, not separate ranking paths.

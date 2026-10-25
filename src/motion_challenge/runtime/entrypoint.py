@@ -147,7 +147,7 @@ def main(adapter_root=None):
     if a.jobs is None:
         from motion_challenge.simulation.vector_physics import cpu_count
         batched = runtime.get('array_batch_entrypoint') or runtime.get('batch_entrypoint')
-        a.jobs = min(64,4*cpu_count()) if batched else min(8,cpu_count())
+        a.jobs = min(64,8*cpu_count()) if batched else min(8,cpu_count())
     if a.inference_batch_size is not None:
         runtime['inference_batch_size'] = a.inference_batch_size
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')

@@ -25,6 +25,9 @@ class KinematicStateView:
         # FK reads the canonical model; only its per-controller MjData mutates.
         self.world = copy.copy(_template(str(Path(robot_profile).resolve())))
         self.world.data = mujoco.MjData(self.world.model)
+        self.world._jp = self.world._jp.copy()
+        self.world._jr = self.world._jr.copy()
+        self.world.reference_work = self.world.reference_work.copy()
         self.origin = tuple(float(x) for x in origin)
         if len(self.origin) != 3:
             raise ValueError('synthetic origin must have three coordinates')

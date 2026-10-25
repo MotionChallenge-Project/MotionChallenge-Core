@@ -56,6 +56,24 @@ class ObservationAccessTests(unittest.TestCase):
             np.testing.assert_allclose(a.linear_velocity_world_m_s,b.linear_velocity_world_m_s,atol=1e-14)
         with self.assertRaises(TypeError): view.reconstruct(state)
 
+    def test_concurrent_fk_has_independent_scratch_and_matches_serial(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from scipy.spatial.transform import Rotation
+        base=controller_state(self.fixture(),PROPRIOCEPTIVE)
+        rng=np.random.default_rng(849)
+        states=[replace(base,root_orientation_xyzw=tuple(Rotation.from_rotvec(rng.normal(size=3)).as_quat()),
+                        root_angular_velocity_world_rad_s=tuple(rng.normal(size=3)),
+                        joint_velocity_rad_s=tuple(rng.normal(size=29))) for _ in range(32)]
+        views=[KinematicStateView(lafan_paths()['robot']) for _ in states]
+        self.assertIs(views[0].world.model,views[1].world.model)
+        self.assertFalse(np.shares_memory(views[0].world._jp,views[1].world._jp))
+        self.assertFalse(np.shares_memory(views[0].world._jr,views[1].world._jr))
+        expected=[v.reconstruct(s) for v,s in zip(views,states)]
+        with ThreadPoolExecutor(8) as pool:
+            for _ in range(8):
+                actual=list(pool.map(lambda pair:pair[0].reconstruct(pair[1]),zip(views,states)))
+                self.assertEqual(expected,actual)
+
     def test_only_proprioceptive_protocols_are_available(self):
         for mode in ('early','none'):
             protocol=json.loads(lafan_paths(mode)['protocol'].read_text())

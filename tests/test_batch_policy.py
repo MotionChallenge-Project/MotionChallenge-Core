@@ -52,6 +52,9 @@ class Arrays:
         if self.fail: q[:] = np.nan
         return ControlBatch(q,np.zeros_like(q),np.full_like(q,20.),np.ones_like(q),np.zeros_like(q))
     def close(self): pass
+def create_parallel(root, config):
+    from motion_challenge.adapters.parallel import ParallelControllers
+    return ParallelControllers(root, config, create)
 def create_array(root, config): return Arrays(config)
 def create(root, config): return Single()
 def create_batch(root, config): return Batched(config)
@@ -74,9 +77,12 @@ def create_batch(root, config): return Batched(config)
                     '--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
                     '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json')]
             previous = None
-            for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5),('arrays',5,3),('no_bodies',5,3),('body_subset',5,3)]:
+            for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5),('parallel',5,3),('arrays',5,3),('no_bodies',5,3),('body_subset',5,3)]:
                 if limit is not None:
                     runtime.update(batch_entrypoint='adapter:create_batch',inference_batch_size=limit)
+                if name == 'parallel':
+                    runtime['batch_entrypoint']='adapter:create_parallel'
+                    runtime['inference_workers']=3
                 if name == 'arrays':
                     runtime['array_batch_entrypoint']='adapter:create_array'
                 if name == 'no_bodies':

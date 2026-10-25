@@ -115,6 +115,14 @@ policy call independently of `--jobs` and MuJoCo `--threads`. Any positive sizes
 partial resets and tail batches are supported. The adapter owns fixed-shape
 padding, device placement and inference engines, including TensorRT.
 
+For fixed-batch native CPU models, an adapter can wrap its scalar factory with
+`motion_challenge.adapters.parallel.ParallelControllers(root, runtime, create_single)`
+and declare that factory as `batch_entrypoint`. It keeps one controller per slot
+and uses a persistent pool, capped by `inference_workers` (default 8) and CPU affinity.
+Use single-threaded model sessions; mutable histories and RNGs must be per slot.
+Validate outputs and closed-loop traces before opting in. Small models may be faster
+with `inference_workers: 1` or a true array batch implementation.
+
 See [batch interfaces and resource limits](BATCHING.md) for array shapes and an
 example. Validate observations, outputs and controls against the author's
 single-sample inference before enabling batched model execution.

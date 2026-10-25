@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MotionChallenge-Core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Auditable motion-controller benchmark contracts and suites"
 readme = "README.md"
 license = "Apache-2.0"

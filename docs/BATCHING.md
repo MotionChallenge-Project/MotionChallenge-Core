@@ -13,7 +13,7 @@ slots. Sizes need not be powers of two or divide one another. A batch limit is a
 maximum, not a promise of a full batch; the final batch and partial resets can be
 smaller. Core runs complete motions and refills slots without splitting motions.
 
-By default, batched adapters use up to four slots per available CPU (at most 64),
+By default, batched adapters use up to eight slots per available CPU (at most 64),
 scalar adapters use up to eight. Physics uses eight threads for small batches,
 16 at 2,048 slots and 32 at 4,096, capped by available CPUs and slots. Motion
 count caps the actual slots. Override these bounds for larger workloads; they

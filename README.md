@@ -1,7 +1,7 @@
 # MotionChallenge Core
 
-Open, reproducible benchmarks for humanoid motion tracking. One shared evaluator;
-independent model adapters.
+An open and reproducible benchmark for humanoid motion tracking.
+A shared evaluator and independent model adapters.
 
 ## Install and run
 
@@ -51,7 +51,7 @@ If you use MotionChallenge in your research, please cite:
 ```bibtex
 @misc{motionchallenge2026,
   author       = {{MotionChallenge Team}},
-  title        = {{MotionChallenge}: An Open Benchmark for Humanoid Motion Tracking},
+  title        = {{MotionChallenge}: An Open and Reproducible Benchmark for Humanoid Motion Tracking},
   year         = {2026},
   howpublished = {\url{https://motionchallenge-project.github.io/motionchallenge/}}
 }

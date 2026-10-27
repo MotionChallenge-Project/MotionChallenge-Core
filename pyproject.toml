@@ -27,6 +27,7 @@ motionchallenge = "motion_challenge.cli:main"
 motionchallenge-eval = "motion_challenge.run:main"
 motionchallenge-merge = "motion_challenge.merge:main"
 motionchallenge-verify = "motion_challenge.verify:main"
+motionchallenge-rescore = "motion_challenge.evaluation.rescore:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

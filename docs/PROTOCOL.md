@@ -128,3 +128,19 @@ averaged over samples within each motion and then equally over motions. Each
 time range has three alignment views, giving six values in one `result.json`. The JSON keys retain `mpjpe_*_m` for compatibility;
 the website displays millimeters. `--termination early` and `--termination none`
 are diagnostic options, not separate ranking paths.
+
+## Rescore a complete trajectory
+
+When only failure conditions change, a previously verified full-motion trace can
+be rescored without policy inference or physics stepping:
+
+```sh
+uv run motionchallenge-rescore --run /path/to/original/run \
+  --original-protocol /path/to/original-protocol.json \
+  --data /path/to/dataset --output /path/to/new-score --jobs 8
+```
+
+The scorer checks trace and data hashes, complete timestamps and unchanged
+simulation/observation settings. It recomputes both metric ranges with canonical
+FK, preserves the original rollout source, and records its scoring source
+separately. Truncated or early-terminated trajectories cannot be reused.

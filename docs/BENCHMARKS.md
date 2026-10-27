@@ -40,8 +40,8 @@ its own ID, complete motion set, source FPS, joint order, immutable source
 revision, and file hashes. Convert raw motion into canonical references outside
 the source repository; never silently filter difficult clips.
 
-New protocol versions receive new IDs and files. Keep old protocol bytes for
-verification of historical results. A leaderboard must separate different
+New protocol versions receive new IDs. Maintain one current configuration;
+historical protocol bytes remain available at their pinned Git revisions. A leaderboard must separate different
 robot/physics/protocol hashes and state-access tiers. Rank only complete suites
 under one frozen configuration; smoke tests, missing clips, and infrastructure
 failures cannot form full-suite scores.

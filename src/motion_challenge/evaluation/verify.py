@@ -29,7 +29,7 @@ def failure_time_matches(recorded, metric_time, failed):
             and math.isclose(recorded, metric_time, rel_tol=0.0, abs_tol=1e-8))
 
 
-def _verify_clip(task):
+def _score_clip(task):
     clip, item, manifest, robot_path, protocol, data_root, result_directory, derive_prefix = task
     world = World(robot_path)
     terminate_on_failure = protocol.get('terminate_on_failure', True)
@@ -92,32 +92,45 @@ def _verify_clip(task):
         raise ValueError('non-failed full episode ended before final timestamp')
     if not terminate_on_failure and not clip['truncated_smoke'] and last_time < motion.duration_s-1e-9:
         raise ValueError('no-termination episode ended before final timestamp')
-    if success != clip['success'] or failure != clip['failure_reasons']:
-        raise ValueError('success/failure recomputation mismatch')
-    if not math.isclose(last_valid/motion.duration_s,clip['completion'],abs_tol=1e-9):
-        raise ValueError('completion recomputation mismatch')
-    if not math.isclose(last_time,clip['observed_time_s'],abs_tol=1e-8):
-        raise ValueError('observed duration mismatch')
-    if not failure_time_matches(clip['failure_time_s'], first_failure_time, bool(failure)):
-        raise ValueError('failure timestamp mismatch')
-    if set(clip['metric_means_over_observed_prefix']) != set(samples.partials):
-        raise ValueError('missing or extra protocol metrics')
-    for k, recorded in clip['metric_means_over_observed_prefix'].items():
-        actual = samples.means()[k]
-        if not math.isclose(actual,recorded,abs_tol=1e-9,rel_tol=1e-7):
-            raise ValueError(f'{k} recomputation mismatch')
+    full = {**clip, 'success': success, 'failure_reasons': failure,
+            'completion': last_valid/motion.duration_s, 'failure_time_s': first_failure_time,
+            'observed_time_s': last_time, 'sample_count': samples.count,
+            'metric_means_over_observed_prefix': samples.means(),
+            'last_sample': {'time_s': last_time, **samples.last}}
+    full.pop('metric_prefix', None)
+    full.pop('wall_time_s', None)
     derived = None
     if derive_prefix:
         count = prefix_count or samples.count
         terminal_time = first_failure_time if failure else last_time
-        item = {**clip, 'sample_count': count,
-                'observed_time_s': clip['failure_time_s'] if failure else clip['observed_time_s'],
+        item = {**full, 'sample_count': count,
+                'observed_time_s': terminal_time,
                 'metric_means_over_observed_prefix': prefix_means or samples.means(),
                 'last_sample': {'time_s': terminal_time, **(prefix_last or samples.last)},
                 'trace': {**clip['trace'], 'sample_limit': count}}
         item.pop('wall_time_s', None)  # No second physical rollout took place.
         derived = item
-    return {'samples': samples.count, 'prefix': derived}
+    return {'samples': samples.count, 'full': full, 'prefix': derived}
+
+
+def _verify_clip(task):
+    record = _score_clip(task)
+    clip, actual = task[0], record['full']
+    if actual['success'] != clip['success'] or actual['failure_reasons'] != clip['failure_reasons']:
+        raise ValueError('success/failure recomputation mismatch')
+    if not math.isclose(actual['completion'], clip['completion'], abs_tol=1e-9):
+        raise ValueError('completion recomputation mismatch')
+    if not math.isclose(actual['observed_time_s'], clip['observed_time_s'], abs_tol=1e-8):
+        raise ValueError('observed duration mismatch')
+    if not failure_time_matches(clip['failure_time_s'], actual['failure_time_s'], bool(actual['failure_reasons'])):
+        raise ValueError('failure timestamp mismatch')
+    values = actual['metric_means_over_observed_prefix']
+    if set(values) != set(clip['metric_means_over_observed_prefix']):
+        raise ValueError('missing or extra protocol metrics')
+    for key, recorded in clip['metric_means_over_observed_prefix'].items():
+        if not math.isclose(values[key], recorded, abs_tol=1e-9, rel_tol=1e-7):
+            raise ValueError(f'{key} recomputation mismatch')
+    return record
 
 
 def verify(result_path, suite_path, robot_path, protocol_path, data_root, controller_path,

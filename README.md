@@ -33,7 +33,7 @@ Clone an adapter with `--recurse-submodules`, then run `uv sync` and
 ## Evaluation
 
 Full-motion success, completion, joint error, and body-position error with
-**XY+yaw / XY / no alignment**. Frozen physics and protocol; hashes and pose
+**XY / XY+yaw / no alignment**. Frozen physics and protocol; hashes and pose
 traces support independent recomputation. Results, data, and weights stay outside
 Git. Each result identifies its dataset, robot, checkpoint and protocol.
 

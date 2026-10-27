@@ -16,6 +16,6 @@ def lafan_paths(termination='early'):
     if termination not in ('early', 'none'):
         raise ValueError('termination must be early or none')
     root=resource_root()
-    protocol = f'protocol.mujoco317-ideal-proprioception-{termination}-v1.json'
+    protocol = f'protocol.mujoco317-ideal-proprioception-{termination}-v2.json'
     return {'suite':root/'suites/lafan/dataset.json','robot':root/'robots/g1-29dof-cpu-v0.json',
             'protocol':root/'suites/lafan'/protocol}

@@ -219,13 +219,10 @@ def tracking_sample(state, reference, protocol):
     ga = Rotation.from_quat(a.orientation_xyzw).inv().apply((0, 0, -1))[2]
     gr = Rotation.from_quat(r.orientation_xyzw).inv().apply((0, 0, -1))[2]
     gravity_z_error = abs(ga-gr)
-    ee_error = max(abs(actual[n].position_world_m[2]-desired[n].position_world_m[2])
-                   for n in cfg['end_effector_bodies'])
     failures = []
     for name, value, threshold in (
         ('anchor_height', height_error, cfg['anchor_height_m']),
-        ('anchor_gravity_z', gravity_z_error, cfg['gravity_z']),
-        ('end_effector_height', ee_error, cfg['end_effector_height_m'])):
+        ('anchor_gravity_z', gravity_z_error, cfg['gravity_z'])):
         if value > threshold:
             failures.append(name)
     names = protocol['metric_bodies']
@@ -242,8 +239,13 @@ def tracking_sample(state, reference, protocol):
         'mpjpe_root_relative_world_axes_m': float(np.linalg.norm((ap-ar)-(rp-rr), axis=1).mean()),
         'anchor_height_error_m': float(height_error),
         'anchor_gravity_z_error': float(gravity_z_error),
-        'end_effector_height_error_m': float(ee_error),
     }
+    if cfg.get('end_effector_bodies'):
+        ee_error = max(abs(actual[n].position_world_m[2]-desired[n].position_world_m[2])
+                       for n in cfg['end_effector_bodies'])
+        metrics['end_effector_height_error_m'] = float(ee_error)
+        if ee_error > cfg['end_effector_height_m']:
+            failures.append('end_effector_height')
     alignment_version = protocol.get('position_alignment_metrics')
     if alignment_version is not None:
         if alignment_version != POSITION_ALIGNMENT_VERSION:

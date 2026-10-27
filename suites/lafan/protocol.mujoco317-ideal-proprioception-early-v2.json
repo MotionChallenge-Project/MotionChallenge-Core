@@ -1,0 +1,79 @@
+{
+  "id": "lafan-g1-29dof/nominal/mujoco317-ideal-proprioception-v2",
+  "official": false,
+  "metric_period_s": 0.02,
+  "initialization": "raw reference frame zero and canonical finite-difference velocities",
+  "reference_velocity": "centered generalized-position difference at plus/minus one source interval; one-sided at endpoints",
+  "failure": {
+    "anchor_body": "pelvis",
+    "anchor_height_m": 0.25,
+    "gravity_z": 0.8,
+    "comparison": "strict greater-than; absolute world-z error and absolute projected unit-gravity z difference in robot/reference root frames; no end-effector termination",
+    "source": "https://arxiv.org/pdf/2610.28480#page=13"
+  },
+  "metric_bodies": [
+    "pelvis",
+    "left_hip_yaw_link",
+    "right_hip_yaw_link",
+    "torso_link",
+    "left_knee_link",
+    "right_knee_link",
+    "left_ankle_roll_link",
+    "right_ankle_roll_link",
+    "left_shoulder_yaw_link",
+    "right_shoulder_yaw_link",
+    "left_elbow_link",
+    "right_elbow_link",
+    "left_wrist_yaw_link",
+    "right_wrist_yaw_link"
+  ],
+  "nominal": {
+    "noise": false,
+    "randomization": false,
+    "sliding_friction": 1.0
+  },
+  "precision_gate": false,
+  "scoring_time": "post-physics state at same reference timestamp, including exact final source timestamp",
+  "warning": "Errors cover the observed prefix; report completion alongside tracking error. Engine versions are separate comparison tracks.",
+  "position_alignment_metrics": "pelvis_xy_and_closest_yaw_v1",
+  "position_alignment_definition": {
+    "no_alignment": "raw world positions; no fitted or initial transform",
+    "xy": "subtract each actual/reference pelvis XY; keep absolute world Z and orientation",
+    "xy_yaw": "XY centering followed by closest world-Z rotation from actual to reference pelvis orientation; preserve Z and tilt",
+    "yaw_rule": "M=R_ref*R_actual^T; angle=atan2(M[1,0]-M[0,1],M[0,0]+M[1,1]); ambiguity if hypot of atan2 arguments <=1e-12; use angle=0, retain sample and expose fraction",
+    "legacy_xyz": "mpjpe_root_relative_world_axes_m remains a separately named translation-only compatibility diagnostic; not one of the three headline modes",
+    "aggregation": "mean Euclidean distance across the same 14 body origins, then mean over observed samples; includes failure sample; macro mean across clips; always report completion alongside prefix errors"
+  },
+  "mujoco_version": "3.17.0",
+  "state_access": "ideal-proprioceptive-no-position-v1",
+  "observation_rules": {
+    "version": "ideal-proprioceptive-no-position-v1",
+    "allowed": [
+      "joint positions and velocities in named order",
+      "full root orientation including yaw",
+      "ideal root-body-origin linear and angular velocity in world axes",
+      "gravity projection derived from orientation",
+      "local FK from joint state and fixed robot geometry",
+      "reference motion including world pose, velocities and declared history/future window",
+      "previous actions and author-native recurrent/proprioceptive history"
+    ],
+    "forbidden": [
+      "actual global root translation XYZ, including measured height",
+      "actual global body positions or position error derived from actual translation",
+      "actual contact flags, forces, impulses or dynamics-only state",
+      "explicit integration of actual velocity into displacement",
+      "odometry, root-position estimators, contact-aided position estimation",
+      "actual position through initialization, reset, reference alignment, cached state or side channels"
+    ],
+    "reference_rule": "Reference packets come only from the frozen motion and robot geometry; never align or recenter using measured translation. Author reference-only transformations must be disclosed.",
+    "special_cases": "Constant synthetic origins, reference-only anchoring and local FK require a per-checkpoint author-supported or numerically equivalent inference path; no arbitrary zeroing of a required actor input.",
+    "memory_rule": "Native history/recurrent state is allowed; explicit position-estimation code is not. This does not prove absence of implicit displacement inference inside a network.",
+    "admission": "Exact weight and auxiliary-artifact hashes, pinned author source, full reset/history/action audit, forbidden-input dependency test, inference parity and independently verified fresh full-suite run.",
+    "scope": "Ideal noise-free proprioception, not a claim of real-world sensor feasibility; training critic/reward/teacher privilege is outside deployment input restrictions."
+  },
+  "primary_metric": {
+    "scope": "full_motion",
+    "field": "mpjpe_xy_aligned_m",
+    "order": "ascending"
+  }
+}

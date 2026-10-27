@@ -2,6 +2,16 @@
 
 ## Evaluation semantics
 
+The primary ranking metric is full-motion MPBPE with XY translation alignment
+only, in millimeters; lower is better. Yaw and height errors remain in the score.
+
+Failure rules follow [SuperMimic Appendix A](https://arxiv.org/pdf/2610.28480#page=13):
+root height difference greater than 0.25 m or projected unit-gravity Z difference
+greater than 0.8, using the robot and reference root frames. The G1 root is the
+pelvis. End-effector deviation is not a failure condition. Equality passes.
+These rules are frozen in protocol v2; v1 files preserve historical verification.
+Observations, physics, references and metric formulas are unchanged.
+
 All motions in the selected suite are retained, hash checked and evaluated with
 the same policy and checkpoint, from the first frame to the exact final source
 timestamp. Motion count and source FPS come from the suite manifest. Position and
@@ -19,8 +29,7 @@ PD is evaluated and saturated every physics step. Metrics compare post-physics
 state to the reference at the same timestamp. Policy frequency may differ by
 checkpoint; scoring uses a common clock and always checks the final transition.
 A final-transition failure counts as failure. The protocol uses
-reference-relative torso height, projected-gravity-z and end-effector height
-conditions; intentional floor poses are not rejected by a constant pelvis floor.
+reference-relative root height and projected-gravity-z conditions; intentional floor poses are not rejected by a constant pelvis floor.
 
 Reports include per-clip success, completion, failure time/reasons, joint MAE,
 root translation/orientation error and the three position scores below. Prefix-only

@@ -6,7 +6,7 @@ import time
 import numpy as np
 from motion_challenge.data.dataset import load_csv_motion
 from motion_challenge.evaluation.accumulator import BatchAccumulator
-from motion_challenge.evaluation.batch_metrics import tracking_arrays
+from motion_challenge.evaluation.batch_metrics import tracking_arrays, failure_names
 from motion_challenge.evaluation.array_traces import ArrayTraceWriter
 from motion_challenge.runtime.policy import PolicyBatch, array_slice
 from motion_challenge.runtime.progress import Progress
@@ -27,7 +27,7 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
     runtime = json.loads(args.controller.read_text())
     manifest = json.loads(args.suite.read_text())
     cfg = protocol['failure']
-    score_names = (cfg['anchor_body'],*cfg['end_effector_bodies'],*protocol['metric_bodies'])
+    score_names = (cfg['anchor_body'],*cfg.get('end_effector_bodies', ()),*protocol['metric_bodies'])
     requested_bodies = runtime.get('reference_bodies')
     if requested_bodies is not None and (not runtime.get('array_batch_entrypoint') or
             not isinstance(requested_bodies,list) or any(not isinstance(n,str) for n in requested_bodies)):
@@ -45,7 +45,8 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
     alive = np.zeros(size,dtype=bool)
     duration,end,starts,last_valid,last_sample = (np.zeros(size) for _ in range(5))
     failure_time = np.full(size,np.nan)
-    failures = np.zeros((size,3),dtype=bool)
+    reasons = failure_names(protocol)
+    failures = np.zeros((size,len(reasons)),dtype=bool)
     control_i,metric_i = np.ones(size,dtype=np.int64),np.ones(size,dtype=np.int64)
     commands = np.empty((size,5,len(pool.world.joint_names)))
     sums = BatchAccumulator(size)
@@ -53,7 +54,6 @@ def evaluate_batch(args, selected, results, protocol, full_suite):
     terminate = protocol.get('terminate_on_failure',True)
     if not isinstance(terminate,bool): raise ValueError('terminate_on_failure must be boolean')
     timings = dict(preflight=0.,dataset_load=0.,metrics=0.,reference_trace=0.,physics=0.,policy=0.,trace_finalize=0.)
-    reasons = ('anchor_height','anchor_gravity_z','end_effector_height')
     results.update(batch_size=size,batch_threads=pool.batch.nthread,
         execution='vector_loop_in_process_adapter',policy_execution='direct_call',
         scheduling='longest_first_dynamic_refill')

@@ -8,7 +8,7 @@ For example, a registered 10,000-motion suite can run with 2,048 active slots,
 uv run evaluate.py --jobs 2048 --threads 32 --inference-batch-size 256
 ```
 
-The selected suite still determines motion count. LAFAN40 uses at most 40 active
+The selected suite still determines motion count. LAFAN1 uses at most 40 active
 slots. Sizes need not be powers of two or divide one another. A batch limit is a
 maximum, not a promise of a full batch; the final batch and partial resets can be
 smaller. Core runs complete motions and refills slots without splitting motions.

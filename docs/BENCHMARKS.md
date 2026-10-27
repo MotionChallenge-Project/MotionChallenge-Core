@@ -5,7 +5,7 @@ model adapters. It owns its dataset manifest, protocol, documentation, and any
 dataset conversion. The core owns reference interpolation, simulation, clocks,
 failures, metric computation, shard merging, and result verification.
 
-LAFAN40 is the bundled first suite, sourced from the
+LAFAN1 is the bundled first suite, sourced from the
 [LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset).
 The current backend targets G1 29 DoF and
 the canonical CSV reference schema. Supporting another robot, raw data format,

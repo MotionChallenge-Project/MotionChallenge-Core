@@ -29,7 +29,7 @@ class ResultOnlyTests(unittest.TestCase):
                 manifest['files'].append(dict(path=p.name,sha256=sha256_file(p)))
             suite = root/'dataset.json';suite.write_text(json.dumps(manifest))
             for mode in ('early','none'):
-                spec = json.loads((ROOT/f'suites/lafan/protocol.mujoco317-ideal-proprioception-{mode}-v1.json').read_text())
+                spec = json.loads((ROOT/f'suites/lafan/protocol.mujoco317-ideal-proprioception-{mode}-v2.json').read_text())
                 spec['failure']['anchor_height_m'] = 1e-6
                 (root/f'{mode}.json').write_text(json.dumps(spec))
             runtime = dict(id='test',state_access='ideal-proprioceptive-no-position-v1',adapter_root=str(root),

@@ -9,7 +9,7 @@ Failure rules follow [SuperMimic Appendix A](https://arxiv.org/pdf/2610.28480#pa
 root height difference greater than 0.25 m or projected unit-gravity Z difference
 greater than 0.8, using the robot and reference root frames. The G1 root is the
 pelvis. End-effector deviation is not a failure condition. Equality passes.
-These rules are frozen in protocol v2; v1 files preserve historical verification.
+Protocol v2 is the sole maintained evaluation protocol.
 Observations, physics, references and metric formulas are unchanged.
 
 All motions in the selected suite are retained, hash checked and evaluated with

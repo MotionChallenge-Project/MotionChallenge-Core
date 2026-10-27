@@ -35,7 +35,7 @@ class NoTerminationTests(unittest.TestCase):
             manifest['files'] = [{'path':source.name,'sha256':sha256_file(source)}]
             suite = root/'suite.json'; suite.write_text(json.dumps(manifest))
             motion = load_csv_motion(source,manifest['joint_names'],manifest['source_fps'])
-            protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json').read_text())
+            protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v2.json').read_text())
             protocol['failure']['anchor_height_m'] = 1e-6
             config = root/'protocol.json'; config.write_text(json.dumps(protocol))
             runtime = {'state_access':'ideal-proprioceptive-no-position-v1', 'control_period_s':.02,'reference_offsets_s':[0.]}

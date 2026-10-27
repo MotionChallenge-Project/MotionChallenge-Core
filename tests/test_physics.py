@@ -62,15 +62,15 @@ class PhysicsTests(unittest.TestCase):
     def test_failure_uses_reference_gravity_z_not_yaw_angle(self):
         import json
         from dataclasses import replace
-        protocol=json.loads((self.root/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v1.json').read_text())
+        protocol=json.loads((self.root/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v2.json').read_text())
         state=self.world.reset(self.motion())
         reference=self.world.reference(0)
         modified=tuple(replace(b,orientation_xyzw=(0.,0.,1.,0.))
-                       if b.name=='torso_link' else b for b in state.bodies)
+                       if b.name==protocol['failure']['anchor_body'] else b for b in state.bodies)
         failures,_=tracking_sample(replace(state,bodies=modified),reference,protocol)
         self.assertNotIn('anchor_gravity_z',failures)
         modified=tuple(replace(b,orientation_xyzw=(1.,0.,0.,0.))
-                       if b.name=='torso_link' else b for b in state.bodies)
+                       if b.name==protocol['failure']['anchor_body'] else b for b in state.bodies)
         failures,_=tracking_sample(replace(state,bodies=modified),reference,protocol)
         self.assertIn('anchor_gravity_z',failures)
 
@@ -78,8 +78,8 @@ class PhysicsTests(unittest.TestCase):
         import json
         from dataclasses import replace
         folder = self.root/'suites/lafan'
-        old = json.loads((folder/'protocol.mujoco317-ideal-proprioception-early-v1.json').read_text())
-        new = json.loads((folder/'protocol.mujoco317-ideal-proprioception-none-v1.json').read_text())
+        old = json.loads((folder/'protocol.mujoco317-ideal-proprioception-early-v2.json').read_text())
+        new = json.loads((folder/'protocol.mujoco317-ideal-proprioception-none-v2.json').read_text())
         self.assertEqual(old['failure'],new['failure'])
         state = self.world.reset(self.motion())
         state = replace(state,bodies=tuple(replace(b,position_world_m=(

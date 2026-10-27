@@ -240,12 +240,6 @@ def tracking_sample(state, reference, protocol):
         'anchor_height_error_m': float(height_error),
         'anchor_gravity_z_error': float(gravity_z_error),
     }
-    if cfg.get('end_effector_bodies'):
-        ee_error = max(abs(actual[n].position_world_m[2]-desired[n].position_world_m[2])
-                       for n in cfg['end_effector_bodies'])
-        metrics['end_effector_height_error_m'] = float(ee_error)
-        if ee_error > cfg['end_effector_height_m']:
-            failures.append('end_effector_height')
     alignment_version = protocol.get('position_alignment_metrics')
     if alignment_version is not None:
         if alignment_version != POSITION_ALIGNMENT_VERSION:

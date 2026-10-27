@@ -33,7 +33,7 @@ def create(root, config): return Policy(config.get('fail',False))
             cfg = root/'runtime.json';cfg.write_text(json.dumps(runtime))
             command = [sys.executable,'-m','motion_challenge.run','--controller',str(cfg),
                        '--suite',str(root/'suite.json'),'--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
-                       '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v1.json'),
+                       '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-early-v2.json'),
                        '--data',str(root),'--batch-size','2']
             env = dict(os.environ, PYTHONPATH=str(ROOT/'src'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
             for mode in ('serial','batch'):

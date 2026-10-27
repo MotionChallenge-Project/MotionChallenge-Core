@@ -17,9 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class BatchMetricTests(unittest.TestCase):
     def test_matches_independent_scalar_scores_and_failure_thresholds(self):
-        protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json').read_text())
-        names = tuple(dict.fromkeys([*protocol['metric_bodies'], protocol['failure']['anchor_body'],
-                                    *protocol['failure']['end_effector_bodies']]))
+        protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v2.json').read_text())
+        names = tuple(dict.fromkeys([*protocol['metric_bodies'], protocol['failure']['anchor_body']]))
         rng = np.random.default_rng(912)
         states, refs = [], []
         for i in range(257):
@@ -40,8 +39,7 @@ class BatchMetricTests(unittest.TestCase):
                 self.assertEqual(failure,expected_failure)
                 self.assertEqual(values.keys(),expected.keys())
                 np.testing.assert_allclose(list(values.values()),[expected[k] for k in values],rtol=0,atol=4e-15)
-        for key,body in [('anchor_height_m',protocol['failure']['anchor_body']),
-                         ('end_effector_height_m',protocol['failure']['end_effector_bodies'][0])]:
+        for key,body in [('anchor_height_m',protocol['failure']['anchor_body'])]:
             for epsilon in (-1e-10,0.,1e-10):
                 ref = refs[0]
                 state = replace(states[0], bodies=tuple(replace(b,position_world_m=(b.position_world_m[0],b.position_world_m[1],

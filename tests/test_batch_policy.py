@@ -75,7 +75,7 @@ def create_batch(root, config): return Batched(config)
             base = [sys.executable,'-m','motion_challenge.run','--controller',str(cfg),
                     '--suite',str(root/'suite.json'),'--data',str(root),
                     '--robot',str(ROOT/'robots/g1-29dof-cpu-v0.json'),
-                    '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v1.json')]
+                    '--protocol',str(ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v2.json')]
             previous = None
             for name,jobs,limit in [('fallback',2,None),('single_batch',1,1),('microbatch',3,2),('wide',7,5),('parallel',5,3),('arrays',5,3),('no_bodies',5,3),('body_subset',5,3)]:
                 if limit is not None:

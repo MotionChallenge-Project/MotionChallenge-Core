@@ -1,4 +1,11 @@
-# MotionChallenge Core
+![MotionChallenge Core — An open, reproducible benchmark for humanoid motion tracking.](docs/images/motionchallenge-banner.svg)
+
+<p align="center">
+  <a href="https://motionchallenge-project.github.io/motionchallenge/">🏆 <b>Leaderboard</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/models/">🤖 <b>Models</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/protocol/">📖 <b>Protocol</b></a> &nbsp; · &nbsp;
+  <a href="https://motionchallenge-project.github.io/motionchallenge/submit/">📤 <b>Submit</b></a>
+</p>
 
 GPU batch evaluation for Unitree G1 motion tracking with MuJoCo Warp. Each model is an independent repository with a pinned Core submodule, original checkpoint identity, batch inference adapter, local converter and dependency lock.
 

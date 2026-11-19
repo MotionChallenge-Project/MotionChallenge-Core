@@ -8,13 +8,15 @@ import time
 import numpy as np
 
 from motion_challenge.runtime.loading import load_controller
+from motion_challenge.runtime.observations import SUPPORTED_ACCESS, controller_arrays, controller_references
 from motion_challenge.data.bodies import BodyArray
 from motion_challenge.sdk import (ControlCommand, ProprioceptiveStatePacket,
-                                  StateBatch, ReferenceBatch, ControlBatch, ReferenceFrame)
+                                  StateBatch, ReferenceBatch, ControlBatch, ReferenceFrame,
+                                  DeployableStateBatch, DeployableStatePacket, MotionReferenceBatch)
 
 
 def array_slice(value, rows, body_indices=None):
-    if type(value) not in (StateBatch,ReferenceBatch):
+    if type(value) not in (StateBatch,DeployableStateBatch,ReferenceBatch,MotionReferenceBatch):
         raise ValueError('only observation arrays may cross the adapter boundary')
     parts = {}
     for field in fields(value):
@@ -34,15 +36,22 @@ def packet_inputs(states, refs):
     """The optional scalar adapter boundary; numerical Core never uses packets."""
     ss,rr = [],[]
     for row in range(len(states.time_s)):
-        ss.append(ProprioceptiveStatePacket(float(states.time_s[row]),states.joint_names,
-            *(tuple(getattr(states,name)[row]) for name in ('joint_position_rad','joint_velocity_rad_s',
-              'root_orientation_xyzw','root_linear_velocity_world_m_s','root_angular_velocity_world_rad_s'))))
-        bodies = np.concatenate((refs.body_position_world_m[row],refs.body_orientation_xyzw[row],
-                                 refs.body_linear_velocity_world_m_s[row],refs.body_angular_velocity_world_rad_s[row]),axis=-1)
+        packet = DeployableStatePacket if isinstance(states, DeployableStateBatch) else ProprioceptiveStatePacket
+        values = {field.name: getattr(states, field.name) for field in fields(packet) if field.name != 'schema'}
+        values = {key: value if key == 'joint_names' else float(value[row]) if key == 'time_s'
+                  else tuple(value[row]) for key, value in values.items()}
+        ss.append(packet(**values))
+        if isinstance(refs, MotionReferenceBatch):
+            body_names=()
+            bodies=np.empty((refs.source_time_s.shape[1],0,13))
+        else:
+            body_names=refs.body_names
+            bodies = np.concatenate((refs.body_position_world_m[row],refs.body_orientation_xyzw[row],
+                                     refs.body_linear_velocity_world_m_s[row],refs.body_angular_velocity_world_rad_s[row]),axis=-1)
         rr.append(tuple(ReferenceFrame(float(refs.requested_time_s[row,k]),float(refs.source_time_s[row,k]),
             *(tuple(getattr(refs,name)[row,k]) for name in ('joint_position_rad','root_position_world_m',
               'root_orientation_xyzw','joint_velocity_rad_s','root_linear_velocity_world_m_s','root_angular_velocity_world_rad_s')),
-            BodyArray(refs.body_names,bodies[k])) for k in range(refs.source_time_s.shape[1])))
+            BodyArray(body_names,bodies[k])) for k in range(refs.source_time_s.shape[1])))
     return tuple(ss),tuple(rr)
 
 
@@ -52,8 +61,9 @@ class PolicyBatch:
     """One persistent policy, arbitrary microbatches and independent slot resets."""
     def __init__(self, config, size, state, refs, log_path):
         runtime = json.loads(Path(config).read_text())
-        if runtime['state_access'] != 'ideal-proprioceptive-no-position-v1':
+        if runtime['state_access'] not in SUPPORTED_ACCESS:
             raise ValueError('invalid observation contract')
+        self.access = runtime['state_access']
         limit = runtime.get('inference_batch_size',size)
         if type(limit) is not int or limit<1:
             raise ValueError('inference_batch_size must be a positive integer')
@@ -94,8 +104,8 @@ class PolicyBatch:
         for start in range(0,len(slots),self.capacity):
             end = min(start+self.capacity,len(slots)); ids = tuple(map(int,slots[start:end]))
             tick = time.perf_counter()
-            ss = array_slice(states,slice(start,end))
-            rr = array_slice(references,slice(start,end),self.body_indices)
+            ss = controller_arrays(array_slice(states,slice(start,end)), self.access)
+            rr = controller_references(array_slice(references,slice(start,end),self.body_indices), self.access)
             arrays = [getattr(v,f.name) for v in (ss,rr) for f in fields(v) if isinstance(getattr(v,f.name),np.ndarray)]
             if any(not np.isfinite(v).all() for v in arrays):
                 raise ValueError('non-finite policy input')

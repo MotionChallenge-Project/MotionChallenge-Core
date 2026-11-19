@@ -1,64 +1,58 @@
-![MotionChallenge Core — An open, reproducible benchmark for humanoid motion tracking.](docs/images/motionchallenge-banner.svg)
+# MotionChallenge Core
 
-<p align="center">
-  <a href="https://motionchallenge-project.github.io/motionchallenge/">🏆 <b>Leaderboard</b></a> &nbsp; · &nbsp;
-  <a href="https://motionchallenge-project.github.io/motionchallenge/models/">🤖 <b>Models</b></a> &nbsp; · &nbsp;
-  <a href="https://motionchallenge-project.github.io/motionchallenge/protocol/">📖 <b>Protocol</b></a> &nbsp; · &nbsp;
-  <a href="https://motionchallenge-project.github.io/motionchallenge/submit/">📤 <b>Submit</b></a>
-</p>
+GPU batch evaluation for Unitree G1 motion tracking with MuJoCo Warp. Each model is an independent repository with a pinned Core submodule, original checkpoint identity, batch inference adapter, local converter and dependency lock.
 
-## Install and run
+## Evaluate
 
-```bash
-git clone https://github.com/MotionChallenge-Project/MotionChallenge-Core.git
-cd MotionChallenge-Core
-uv sync
-```
+Download the original motion dataset, then use a model repository:
 
-Run a checkpoint from a demo adapter with `uv run evaluate.py`.
-Each adapter pins `MotionChallenge-Core` and produces verified results using the shared protocol.
+~~~sh
+git clone --recurse-submodules https://github.com/MotionChallenge-Project/MotionChallenge-heft
+cd MotionChallenge-heft
+uv sync --locked
+uv run --locked python evaluate.py --dataset lafan --data /data/lafan --output results/lafan
+uv run --locked python evaluate.py --dataset seed --data /data/seed/g1.tar.gz --output results/seed
+~~~
 
-## Demo Model adapters
+Use Linux x86-64, Python 3.12 and an NVIDIA GPU compatible with the locked CUDA dependencies. The command downloads pinned original weights, converts them locally, validates original-versus-batch inference, evaluates all motions and verifies the recorded trajectories.
 
-| Model | Repository |
-| :-- | :-- |
-| GRIT | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-grit) |
-| SONIC v1.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1) |
-| HoloMotion v1.4.1 | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1) |
-| PMT RGMT | [Evaluation repository](https://github.com/MotionChallenge-Project/MotionChallenge-pmt-rgmt) |
+- LAFAN: obtain the G1 CSV files from [LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset). The data directory contains g1/*.csv.
+- SEED: obtain the original g1.tar.gz from [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed). Keep the archive intact. The [unified selection](suites/seed/selection.jsonl.gz) fixes 129,561 motions.
+- Data stays local and is used under the upstream terms. Repositories contain selection metadata and software.
 
-Clone an adapter with `--recurse-submodules`, then run `uv sync` and
-`uv run evaluate.py`.
+--cache selects a shared local cache (default ~/.cache/MotionChallenge), --device cuda:0 selects a GPU, and --weights PATH supplies an already downloaded original checkpoint. Original and converted weights are checked by hash. --offline uses available artifacts. --data-format lerobot-v3 explicitly selects an existing local LeRobot v3 release.
 
-## Evaluation
+## Protocol
 
-Full-motion success, completion, joint error, and body-position error with
-**XY / XY+yaw / no alignment**. Frozen physics and protocol; hashes and pose
-traces support independent recomputation. Results, data, and weights stay outside
-Git. Each result identifies its dataset, robot, checkpoint and protocol.
+| Item | Configuration |
+| --- | --- |
+| Robot | G1, 29 joints; pinned mjlab bodies, joints and collision geometry |
+| Control and scoring | 50 Hz |
+| Physics | Four 5 ms steps per control period |
+| Solver | Newton; maximum 50 iterations and 20 line-search iterations |
+| Contact sliding friction | 1.0 |
+| Environments | min(motion_count, 4096) |
+| Scheduling | Longest motions first; refill completed slots |
+| Inference | Full environment batch |
+| Observation exclusions | Actual global position and actual linear velocity in every frame |
+| Failure | Pelvis height error > 0.25 m or gravity-Z error > 0.8 |
+| Aggregation | Equal weight per motion |
 
-[Protocol](docs/PROTOCOL.md) · [Add a model](docs/ADAPTERS.md) ·
-[Add a benchmark](docs/BENCHMARKS.md) ·
-[Batch evaluation](docs/BATCHING.md) ·
-[Code layout](docs/ARCHITECTURE.md) ·
-[Website](https://motionchallenge-project.github.io/motionchallenge/) ·
-[Project](https://github.com/MotionChallenge-Project)
+Policies receive allowed state and root/joint reference information. Adapters construct their own reference features. Core precomputes scoring reference body poses with MuJoCo Warp before rollout and reads actual body poses from simulation.
 
-Apache-2.0. [Third-party notices](THIRD_PARTY_NOTICES.md).
+All motions run to the endpoint. Results report success, completion and tracking errors over the complete motion and the prefix through first failure. Numerical simulation failures do not produce a ranked full-suite score.
 
-All controllers use [ideal proprioception without global position feedback](docs/OBSERVATIONS.md).
+## Caches and evidence
 
-## Citation
+Original SEED conversion uses up to eight CPU workers and checks archive identity, selection, frame counts, quaternion validity and the canonical pose hash. Dataset conversion and reference FK are shared across models. Use a local SSD cache for large datasets.
 
-If you use MotionChallenge in your research, please cite:
+Each result binds protocol, original and converted weights, source hashes, canonical poses, simulation settings and traces. Independent CPU MuJoCo recomputes body poses and metrics.
 
-```bibtex
-@misc{motionchallenge2026,
-  author       = {{MotionChallenge Team}},
-  title        = {{MotionChallenge}: An Open, Reproducible Benchmark for Humanoid Motion Tracking},
-  year         = {2026},
-  url          = {https://motionchallenge-project.github.io/motionchallenge/}
-}
-```
+~~~sh
+uv run motionchallenge-verify results/lafan/result.json --jobs 8
+uv run motionchallenge-reproduce results/lafan results/lafan-repeat --output reproduction.json
+~~~
 
-[Download BibTeX](CITATION.bib).
+Reproduction compares matching data, checkpoint, adapter and simulator identities. Aggregate and per-motion numerical differences are reported separately from successful execution of the same pipeline.
+
+See [protocol](docs/PROTOCOL.md), [observations](docs/OBSERVATIONS.md), [adapter interface](docs/ADAPTERS.md), [datasets](docs/BENCHMARKS.md) and [batching](docs/BATCHING.md).

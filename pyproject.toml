@@ -11,10 +11,15 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "robots/LICENSE.mjlab"]
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "numpy==2.5.1",
-  "scipy==1.16.2",
-  "mujoco==3.17.0",
-  "onnxruntime==1.30.0",
+  "numpy==2.4.4",
+  "scipy==1.17.1",
+  "mujoco==3.11.0",
+  "mujoco-warp==3.11.0",
+  "warp-lang==1.18.0",
+  "torch==2.14.1",
+  "safetensors==0.8.0",
+  "onnx==1.21.0",
+  "pyarrow==25.0.1",
   "PyYAML==6.0.3",
 ]
 
@@ -23,15 +28,18 @@ Repository = "https://github.com/MotionChallenge-Project/MotionChallenge-Core"
 Issues = "https://github.com/MotionChallenge-Project/MotionChallenge-Core/issues"
 
 [project.scripts]
-motionchallenge = "motion_challenge.cli:main"
-motionchallenge-eval = "motion_challenge.run:main"
-motionchallenge-merge = "motion_challenge.merge:main"
-motionchallenge-verify = "motion_challenge.verify:main"
-motionchallenge-rescore = "motion_challenge.evaluation.rescore:main"
+motionchallenge-eval = "motion_challenge.runtime.mjwarp_entrypoint:main"
+motionchallenge-verify = "motion_challenge.evaluation.tensor_verify:main"
+motionchallenge-prepare = "motion_challenge.data.prepare:main"
+motionchallenge-reproduce = "motion_challenge.evaluation.reproduction:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.data-files]
 "share/MotionChallenge-Core/suites/lafan" = ["suites/lafan/*.json"]
+"share/MotionChallenge-Core/suites/seed" = ["suites/seed/*.json", "suites/seed/*.jsonl.gz"]
 "share/MotionChallenge-Core/robots" = ["robots/*.json", "robots/*.xml", "robots/LICENSE*"]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

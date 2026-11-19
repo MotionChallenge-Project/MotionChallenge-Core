@@ -1,0 +1,33 @@
+{
+  "schema": "motionchallenge/dataset-selection-v1",
+  "id": "bones-seed-g1-v3-aligned-20261118",
+  "upstream": "https://huggingface.co/datasets/bones-studio/seed",
+  "local_release": "seed_restore_flips_exclude10_20261118",
+  "source_format": "bones-g1-headered-csv",
+  "source_fps": 120,
+  "expected_episodes": 129561,
+  "expected_frames": 113674960,
+  "selection": {
+    "path": "selection.jsonl.gz",
+    "sha256": "1c1c9cd881aa48a591f0ae81318efa557673129a765225c235a89c8e6fe5d809"
+  },
+  "exclude": [],
+  "notes": [
+    "The selection ledger is the single authoritative public evaluation cohort.",
+    "No poses or original CSV data are distributed.",
+    "Pose parity is pending verification; not yet an admitted benchmark."
+  ],
+  "source_archive": {
+    "name": "g1.tar.gz",
+    "bytes": 23499973647,
+    "sha256": "52580ea8bced72ea9e2ff1e7b68f01c51c7f1099581e9a46b7c87e1dec106d8a"
+  },
+  "validation": {
+    "source_paths_matched": 129561,
+    "missing": 0,
+    "source_archive_files": 142220,
+    "raw_to_v3_random_sample_clips": 16,
+    "raw_to_v3_sample_max_abs_error": 0.0,
+    "full_pose_comparison": false
+  }
+}

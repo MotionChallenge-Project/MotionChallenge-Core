@@ -1,0 +1,258 @@
+[
+  {
+    "model": "any2track-v2",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "1320bddd4b981876e84243c0d336c8eaef57e202499b694cfbdc626fab3972c1",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "bfm-zero",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "cdc9d6454d72b00fabfd1c2ab26ad463a5638cde4e3ac82946975d1e459d9939",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "grit",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "39d573e970b7088275ed68ec8a9597fa9c402d98d5ad211991db7d8d0f5a82b9",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "heft",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "192aaacc49ce066b85bdc9822bc35eca9ae21b8efc8371c089f7bc0077a86791",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "holomotion",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "859174937272747e762075db482e2b8d05d40dacb3a09884fc9d7d42086bbffe",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "holomotion-v1-3-1",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "ae28e8e9bf39bc752e82ade5e0ea0436689dafa07af41fa39af696f6f6a2bbfe",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "holomotion-v1-3-2",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "f3fa8cecf98080fe255348fd94627038f90db64246ca7309de15e80ad6bc6f22",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "holomotion-v1-4-1",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "2aabb53bd86b1860dd07b24d02710f4b988f9c201655becb45a2378604599ad7",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "holomotion-v2-0-0",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "b0681976135eed572d1d20aefc52ec65c149bdc636f2594a6436fa7136a3fc86",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "humanoid-gpt",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "bbaac94ba08d30bd96879e0c5878d60a38180f1cb819a9336cc6b56d49f333f9",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "humanoid-gpt-transformer-216",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "82313c76869ca796395abf80ee4288cced424d25087e74e32f9ec739ff59c853",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "mimic-lite",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "031b8d67557795d86e4ed3f30e7a707414534feba65f330c64f1b07a1f5c7a0b",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "mosaic",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "d6e124126a1b3e4fd3cc75e820fc0a4e170aa66ab297290fa1a3f1495fa07f3d",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "omnixtreme",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "b050772c0b49c813f457cdf21bb3e4f23a027e2e22c5279ab23423ea264007e2",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-adaptive",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "48b267f01a632b90577148ea1801d291e2e1f3d5321807153a26f38cd4104b25",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-add",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "7f90c94f13f4cca7f57cad4535f6af99a25f80628344ed91567e0e8d7b1f3bc4",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-bpo",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "72daa7ae41aad80a247aa57c47e68d33f0d40d03efd3bc4621f585e253d3a759",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-flat",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "dce21ee052099c49b847e04a4bfe5aa4baea94bc8992b72e5f30d2b67f13dd26",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-rgmt",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "38e8070882d9e397a4850a7b76337fb9260155f6dcc1887759db070f2c014f12",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-streaming",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "4a13d0e41ad868acf88c5599821b1e983dd845f89d4e2fee1c106f7a6b46337f",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "pmt-uniform",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "349471acdddcc497a83d397eb540ace4eb4222c7f7a2a3243b1f42d4b538a6a1",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "protomotions",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "a59baa3e04a951e5cf0b4cc68f24ebaafa9272714226618b99a5017dfc805b4c",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "scalebfm",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "19628312a3fc6ff4c7f9e5ced5ec0739edef28fe52449d0127c1f9cc7eb6b25d",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "scalebfm-m",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "88d5a79946c03ed25503f48b2af71d16290844ef066ca9b6c8fa8dc3837422e3",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "sonic",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "3e1914f136a0a85e91d42fa0531ffbfdd2f5999f7019a01bfdb9ff8788992070",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "sonic-low-latency",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "c4ac2e74045e7cbfb568f15e6bf47ea7ce023df7a94322af50be223e0a628bab",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "sonic-original",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "sonic-v1-1",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "34bae8570d4a4421a5391a5c2befd745d4a02d182ec539e5f9da44c091c67509",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "teleopit",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "1ebd341d9193e1c49a986450f6043ba1a9473ad46636ce0bcb1c7755c856e0de",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "textop",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+    "status": "excluded",
+    "reason": "Released adapter consumes actual root linear velocity",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "twist2",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "2d1fb3a31e4e967f70ecfefc3ad1e7b2ac491677068b89f60b565a94e7735061",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  },
+  {
+    "model": "ufo",
+    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
+    "checkpoint_sha256": "fe58bf17427679a0f0a22ad5f05d7579373a365936154770f31e815e8f0e4ad7",
+    "status": "pending_input_and_batch_parity",
+    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
+    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+  }
+]

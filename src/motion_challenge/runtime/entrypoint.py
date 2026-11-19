@@ -94,9 +94,9 @@ def resolve_artifacts(runtime, root, overrides=(), offline=False, progress=None)
 
 def resolve_observation_contract(runtime, root):
     """Require the fixed observation contract and exact-checkpoint evidence."""
-    from motion_challenge.runtime.observations import PROPRIOCEPTIVE, validate_access
+    from motion_challenge.runtime.observations import validate_access
     resolved = dict(runtime)
-    validate_access({'state_access': PROPRIOCEPTIVE}, runtime)
+    access = validate_access({'state_access': runtime.get('state_access')}, runtime)
     declaration = runtime.get('observation_contract')
     if not declaration:
         raise ValueError('checkpoint has no declared observation admission record')
@@ -106,8 +106,10 @@ def resolve_observation_contract(runtime, root):
     admission = json.loads(record.read_text())
     if admission.get('checkpoint_sha256') != runtime.get('weights_sha256'):
         raise ValueError('admission record refers to a different checkpoint')
-    if admission.get('state_access') != PROPRIOCEPTIVE:
+    if admission.get('state_access') != access:
         raise ValueError('admission record refers to a different observation protocol')
+    if admission.get('status') == 'excluded':
+        raise ValueError('checkpoint excluded under this observation protocol: '+admission.get('reason','forbidden policy inputs'))
     if admission.get('status') != 'inference_verified':
         raise ValueError('checkpoint observation admission is not inference_verified')
     resolved['observation_admission_sha256'] = declaration['admission_sha256']

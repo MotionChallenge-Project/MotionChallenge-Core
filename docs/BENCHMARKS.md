@@ -1,51 +1,19 @@
-# Build an independent benchmark
+# Motion datasets
 
-A benchmark project depends on the same pinned `MotionChallenge-Core` package as
-model adapters. It owns its dataset manifest, protocol, documentation, and any
-dataset conversion. The core owns reference interpolation, simulation, clocks,
-failures, metric computation, shard merging, and result verification.
+## LAFAN1
 
-LAFAN1 is the bundled first suite, sourced from the
-[LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset).
-The current backend targets G1 29 DoF and
-the canonical CSV reference schema. Supporting another robot, raw data format,
-or failure family requires an explicit versioned core extension; arbitrary
-formats are not automatically supported.
+The frozen dataset contains 40 G1 motions and 264,705 frames at 30 Hz. Download the files specified by suites/lafan/dataset.json into a directory containing g1/. CSV rows contain root translation in metres, XYZW quaternion and 29 joint positions in radians.
 
-```text
-another-benchmark/
-  MotionChallenge-Core/  # shared core Git submodule
-  pyproject.toml          # local path dependency on that submodule
-  uv.lock
-  dataset.json           # immutable source revision, files, hashes, joint names
-  protocol.json          # explicit metric clock and supported failure settings
-  README.md
-```
+## BONES-SEED
 
-Use the dependency example in [ADAPTERS.md](ADAPTERS.md). After `uv sync`, invoke
-the core with the external suite/protocol and a model's runtime configuration:
+Download the original g1.tar.gz. SHA256: 52580ea8bced72ea9e2ff1e7b68f01c51c7f1099581e9a46b7c87e1dec106d8a.
 
-```sh
-uv run motionchallenge-eval \
-  --suite ./dataset.json --protocol ./protocol.json \
-  --robot /path/reported/by/motionchallenge-paths/g1-29dof-cpu-v0.json \
-  --controller ../my-controller/runtime.json \
-  --data /external/cache/my-suite --output /external/runs/evaluation.json
-```
+suites/seed/filter.json binds the archive and a single selection.jsonl.gz ledger. Each row records archive path, frame count and canonical motion identity. The benchmark contains 129,561 motions and 113,674,960 source frames at 120 Hz.
 
-The robot path is available through `motionchallenge paths` or
-`motion_challenge.resources.lafan_paths()['robot']`. The bundled dataset and
-protocol JSON files are examples of supported schemas. A new suite declares
-its own ID, complete motion set, source FPS, joint order, immutable source
-revision, and file hashes. Convert raw motion into canonical references outside
-the source repository; never silently filter difficult clips.
+Source CSV columns contain frame index, root XYZ translation in centimetres, root XYZ Euler orientation in degrees, and named joint angles in degrees. Conversion produces float32 root XYZ metres, XYZW quaternion and 29 joint radians. Parallel parsing preserves canonical ordering.
 
-New protocol versions receive new IDs. Maintain one current configuration;
-historical protocol bytes remain available at their pinned Git revisions. A leaderboard must separate different
-robot/physics/protocol hashes and state-access tiers. Rank only complete suites
-under one frozen configuration; smoke tests, missing clips, and infrastructure
-failures cannot form full-suite scores.
+## Local cache
 
-All outputs live outside Git repositories. A separate ranking website can read
-verified result artifacts from external storage; the core source repository is
-not the results database. Per-motion traces enable independent recomputation.
+poses.npy stores concatenated canonical poses. dataset.json records joint order, motion names, starts, lengths, frame rate, hashes and conversion provenance. No upload is needed.
+
+Original data is the default one-command workflow. --data-format lerobot-v3 explicitly selects an existing local LeRobot v3 release. Its motion identities, frames and joint schema must match the same frozen suite.

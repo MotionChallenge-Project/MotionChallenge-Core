@@ -171,3 +171,39 @@ class ArrayBatchController(Protocol):
     def act_batch(self, slots: tuple[int, ...], states: StateBatch,
                   references: ReferenceBatch) -> ControlBatch: ...
     def close(self) -> None: ...
+
+
+@dataclass(frozen=True)
+class DeployableStatePacket:
+    """Strict observations: no actual translation or linear velocity."""
+    time_s: float
+    joint_names: tuple[str, ...]
+    joint_position_rad: Vector
+    joint_velocity_rad_s: Vector
+    root_orientation_xyzw: Vector
+    root_angular_velocity_world_rad_s: Vector
+    schema: str = 'proprioceptive-no-position-no-linear-velocity-v1'
+
+
+@dataclass(frozen=True)
+class DeployableStateBatch:
+    """NumPy or device tensor observations without privileged translation."""
+    joint_names: tuple[str, ...]
+    time_s: object
+    joint_position_rad: object
+    joint_velocity_rad_s: object
+    root_orientation_xyzw: object
+    root_angular_velocity_world_rad_s: object
+
+
+@dataclass(frozen=True)
+class MotionReferenceBatch:
+    """Adapter-facing motion data only; no Core-computed body FK features."""
+    requested_time_s: object
+    source_time_s: object
+    joint_position_rad: object
+    root_position_world_m: object
+    root_orientation_xyzw: object
+    joint_velocity_rad_s: object
+    root_linear_velocity_world_m_s: object
+    root_angular_velocity_world_rad_s: object

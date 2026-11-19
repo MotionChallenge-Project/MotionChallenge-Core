@@ -17,7 +17,7 @@ uv run --locked python evaluate.py --dataset seed --data /data/seed/g1.tar.gz --
 Use Linux x86-64, Python 3.12 and an NVIDIA GPU compatible with the locked CUDA dependencies. The command downloads pinned original weights, converts them locally, validates original-versus-batch inference, evaluates all motions and verifies the recorded trajectories.
 
 - LAFAN: obtain the G1 CSV files from [LAFAN1 Retargeting Dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset). The data directory contains g1/*.csv.
-- SEED: obtain the original g1.tar.gz from [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed). Keep the archive intact. The [unified selection](suites/seed/selection.jsonl.gz) fixes 129,561 motions.
+- SEED: obtain the original g1.tar.gz from [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed). Keep the archive intact. We evaluate a feasibility-filtered subset of the original G1 data. The [unified inclusion list](suites/seed/selection.jsonl.gz) fixes the same 129,561 motions for every model.
 - Data stays local and is used under the upstream terms. Repositories contain selection metadata and software.
 
 --cache selects a shared local cache (default ~/.cache/MotionChallenge), --device cuda:0 selects a GPU, and --weights PATH supplies an already downloaded original checkpoint. Original and converted weights are checked by hash. --offline uses available artifacts. --data-format lerobot-v3 explicitly selects an existing local LeRobot v3 release.

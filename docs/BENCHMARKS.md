@@ -6,6 +6,8 @@ The frozen dataset contains 40 G1 motions and 264,705 frames at 30 Hz. Download 
 
 ## BONES-SEED
 
+We evaluate a feasibility-filtered subset of the original BONES-SEED G1 motion data. Every model uses the same fixed subset.
+
 Download the original g1.tar.gz. SHA256: 52580ea8bced72ea9e2ff1e7b68f01c51c7f1099581e9a46b7c87e1dec106d8a.
 
 suites/seed/filter.json binds the archive and a single selection.jsonl.gz ledger. Each row records archive path, frame count and canonical motion identity. The benchmark contains 129,561 motions and 113,674,960 source frames at 120 Hz.

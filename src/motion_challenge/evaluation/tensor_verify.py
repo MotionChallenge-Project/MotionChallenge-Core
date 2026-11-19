@@ -51,6 +51,9 @@ def chunk(task):
     fraction=frame-lo;rp=a[:,:3]+fraction[:,None]*(b[:,:3]-a[:,:3])
     rq=slerp_arrays(a[:,3:7],b[:,3:7],fraction)
     rj=a[:,7:]+fraction[:,None]*(b[:,7:]-a[:,7:])
+    # The scoring reference stores interpolated poses as float32 before FK.
+    # Recreate that input boundary independently, then use CPU MuJoCo.
+    rp,rq,rj=(x.astype(np.float32).astype(np.float64) for x in (rp,rq,rj))
     actual=np.empty((len(ids),len(bids),7));desired=np.empty_like(actual)
     for i in range(len(ids)):
         world.data.qpos[:]=qpos[i];mujoco.mj_kinematics(world.model,world.data)

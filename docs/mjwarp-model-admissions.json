@@ -3,113 +3,155 @@
     "model": "any2track-v2",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "1320bddd4b981876e84243c0d336c8eaef57e202499b694cfbdc626fab3972c1",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "84dd29a642dd0348491df62a313e1b4d6485094ed8c67529bf0c575a15958afb",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-any2track-v2/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-any2track-v2/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "bfm-zero",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "cdc9d6454d72b00fabfd1c2ab26ad463a5638cde4e3ac82946975d1e459d9939",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "71927ba59cec90745e4eae0a4664a8c97a2000611382059d1561696ba41bcea4",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-bfm-zero/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-bfm-zero/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "grit",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "39d573e970b7088275ed68ec8a9597fa9c402d98d5ad211991db7d8d0f5a82b9",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "7b54cbb8066ab036f91438072f00f4de72a2828d4785a0b0f8c83e93f55800fa",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-grit/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-grit/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "heft",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "192aaacc49ce066b85bdc9822bc35eca9ae21b8efc8371c089f7bc0077a86791",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations, original inference parity and full-batch checks passed.",
+    "admission_sha256": "72cee562b2a45eff67a5cf394241f1b2060e4bf95e291188d6a291495f4fbb3e",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-heft/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-heft/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "holomotion",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "859174937272747e762075db482e2b8d05d40dacb3a09884fc9d7d42086bbffe",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "81df0d22ebb3a60c92edf22d51bc462b28575385df57b8e763f853b19232dea4",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "holomotion-v1-3-1",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "ae28e8e9bf39bc752e82ade5e0ea0436689dafa07af41fa39af696f6f6a2bbfe",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "78657e6b01074053d1486797de3c4f1920d08481815759c8869b9b145d13a06c",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-3-1/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-3-1/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "holomotion-v1-3-2",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "f3fa8cecf98080fe255348fd94627038f90db64246ca7309de15e80ad6bc6f22",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "315c9e742f642c64dffc2c79d8b50f8425b92c667bdd201dcd3dabc296525e40",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-3-2/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-3-2/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "holomotion-v1-4-1",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "2aabb53bd86b1860dd07b24d02710f4b988f9c201655becb45a2378604599ad7",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "e318fd7a587d7d27e6ea389395096ac5fd78ee2cfa588dd087a0ac5ed5b0b108",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v1-4-1/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "holomotion-v2-0-0",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "b0681976135eed572d1d20aefc52ec65c149bdc636f2594a6436fa7136a3fc86",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "bb1a4e45462bc3dfc0a224f0a87ff2b562bb5be52b92e3c47b5ea0297bc6abe5",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v2-0-0/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-holomotion-v2-0-0/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "humanoid-gpt",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "bbaac94ba08d30bd96879e0c5878d60a38180f1cb819a9336cc6b56d49f333f9",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "b6ea9c7a175062a7c92b97de95c60333c5701433684b11d6668a5f74843e8287",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-humanoid-gpt/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-humanoid-gpt/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "humanoid-gpt-transformer-216",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "82313c76869ca796395abf80ee4288cced424d25087e74e32f9ec739ff59c853",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "f3a147f0b5fd57cff1adc0fdc8011efd2a9fd106a1cd327f09be307cc0c5d5c4",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-humanoid-gpt-transformer-216/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-humanoid-gpt-transformer-216/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "mimic-lite",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "031b8d67557795d86e4ed3f30e7a707414534feba65f330c64f1b07a1f5c7a0b",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations, original inference parity and full-batch checks passed.",
+    "admission_sha256": "84f8f9f9cc8b9a7853a6cdfd6d5ec46ef0e15ffd40ffa027f0ee187720ad22ac",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-mimic-lite/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-mimic-lite/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "mosaic",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "d6e124126a1b3e4fd3cc75e820fc0a4e170aa66ab297290fa1a3f1495fa07f3d",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations, original inference parity and full-batch checks passed.",
+    "admission_sha256": "6e3b9d99c741721e380790f1a836ac170714b6a14c28f7db789e5e4c02feeece",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-mosaic/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-mosaic/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "omnixtreme",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "b050772c0b49c813f457cdf21bb3e4f23a027e2e22c5279ab23423ea264007e2",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "087eb646ccfcc1189c48f996f8078fde34b0cb2ec7e887826a7edbb23b534946",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-omnixtreme/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-omnixtreme/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "pmt-adaptive",
@@ -117,7 +159,8 @@
     "checkpoint_sha256": "48b267f01a632b90577148ea1801d291e2e1f3d5321807153a26f38cd4104b25",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "7c8b9baf77442796f0de0fdb9a78610b51c9c3246a7618b06c3c10788a39c3e7",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-adaptive/blob/main/admission.mjwarp.json"
   },
   {
     "model": "pmt-add",
@@ -125,7 +168,8 @@
     "checkpoint_sha256": "7f90c94f13f4cca7f57cad4535f6af99a25f80628344ed91567e0e8d7b1f3bc4",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "c56183dcabe73bb7ffbb898994af86b03a0d740f083cf21dc15c41c474e72ae7",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-add/blob/main/admission.mjwarp.json"
   },
   {
     "model": "pmt-bpo",
@@ -133,7 +177,8 @@
     "checkpoint_sha256": "72daa7ae41aad80a247aa57c47e68d33f0d40d03efd3bc4621f585e253d3a759",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "d734e5e9742797954464b692bbfecaed3319c3fa16ed2dcc30d4b9a093a2f4b7",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-bpo/blob/main/admission.mjwarp.json"
   },
   {
     "model": "pmt-flat",
@@ -141,15 +186,19 @@
     "checkpoint_sha256": "dce21ee052099c49b847e04a4bfe5aa4baea94bc8992b72e5f30d2b67f13dd26",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "05abb32e045dacdfd0209f7db24d4cb65651b02d9e1606a74982d582f760a317",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-flat/blob/main/admission.mjwarp.json"
   },
   {
     "model": "pmt-rgmt",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "38e8070882d9e397a4850a7b76337fb9260155f6dcc1887759db070f2c014f12",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "c5253cfaf83776db373f19281a039f87f1b15ea5feeb5f2fb2b7deeb074073ca",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-rgmt/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-rgmt/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "pmt-streaming",
@@ -157,7 +206,8 @@
     "checkpoint_sha256": "4a13d0e41ad868acf88c5599821b1e983dd845f89d4e2fee1c106f7a6b46337f",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "a44d60703e6dcaea7683bbf32c7550e8c47ef4fcfa353a54433a6ecc713769d1",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-streaming/blob/main/admission.mjwarp.json"
   },
   {
     "model": "pmt-uniform",
@@ -165,71 +215,74 @@
     "checkpoint_sha256": "349471acdddcc497a83d397eb540ace4eb4222c7f7a2a3243b1f42d4b538a6a1",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "124e7332e8a7905685c6e9a86903e23a5042ce4e96f57444bd53f00f0bd6f3ee",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-pmt-uniform/blob/main/admission.mjwarp.json"
   },
   {
     "model": "protomotions",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "a59baa3e04a951e5cf0b4cc68f24ebaafa9272714226618b99a5017dfc805b4c",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
-  },
-  {
-    "model": "scalebfm",
-    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
-    "checkpoint_sha256": "19628312a3fc6ff4c7f9e5ced5ec0739edef28fe52449d0127c1f9cc7eb6b25d",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict deployment observations, original ONNX and ONNX Runtime parity, full-batch inference and partial-reset validation passed.",
+    "admission_sha256": "d7cfc60f2b33fd219f1a5fba7e2806ef0e608f618375419e78b2de0e016812fe",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-protomotions/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-protomotions/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "scalebfm-m",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "88d5a79946c03ed25503f48b2af71d16290844ef066ca9b6c8fa8dc3837422e3",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
-  },
-  {
-    "model": "sonic",
-    "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
-    "checkpoint_sha256": "3e1914f136a0a85e91d42fa0531ffbfdd2f5999f7019a01bfdb9ff8788992070",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "17d82ddc8d3e8e29eedd231885f75fb7ba83d274252123a10b8536d6e675407d",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-scalebfm-m/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-scalebfm-m/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "sonic-low-latency",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "c4ac2e74045e7cbfb568f15e6bf47ea7ce023df7a94322af50be223e0a628bab",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "cfc2966186317a989fb1b5512255ad9ea8792c5cd88f8f3463e12983ad327618",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-low-latency/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-low-latency/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "sonic-original",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "4ca947195c36d12185fa8ae7215e3581acc557efe859a48d599e287d696077a5",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-original/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-original/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "sonic-v1-1",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "34bae8570d4a4421a5391a5c2befd745d4a02d182ec539e5f9da44c091c67509",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "09c49954cf1547660b8a20fb73dfce9051f248dfb218ea376f0715df0e09c4c9",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-sonic-v1-1/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "teleopit",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "1ebd341d9193e1c49a986450f6043ba1a9473ad46636ce0bcb1c7755c856e0de",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "f534abd8cb0ce6b22bcd4d0f0132ac37ef227dbd8cc9b22dba1b240907e277c5",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-teleopit/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-teleopit/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "textop",
@@ -237,22 +290,29 @@
     "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
     "status": "excluded",
     "reason": "Released adapter consumes actual root linear velocity",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "admission_sha256": "15a7df7f7ea2732d9e1c4c7118c1694bdef4c32fea1a2a9335a624c3e1abc428",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-textop/blob/main/admission.mjwarp.json"
   },
   {
     "model": "twist2",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "2d1fb3a31e4e967f70ecfefc3ad1e7b2ac491677068b89f60b565a94e7735061",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict tensor observations, original inference parity and full-batch conversion checks passed.",
+    "admission_sha256": "e8cf2ff4879afe3b5ce14eef826db205478731f9831d4947f2ea6bc723713fb8",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-twist2/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-twist2/blob/main/validation/checkpoint-origin.json"
   },
   {
     "model": "ufo",
     "state_access": "proprioceptive-no-position-no-linear-velocity-v1",
     "checkpoint_sha256": "fe58bf17427679a0f0a22ad5f05d7579373a365936154770f31e815e8f0e4ad7",
-    "status": "pending_input_and_batch_parity",
-    "reason": "Must pass strict input and batched-inference parity; no admission inferred from legacy results",
-    "legacy_state_access": "ideal-proprioceptive-no-position-v1"
+    "status": "inference_verified",
+    "reason": "Strict observations and original/batched inference parity verified.",
+    "admission_sha256": "9079f988bea7d53107bdfc6b11531eaba6d15502cee138a922d35b6f786cd992",
+    "admission_url": "https://github.com/MotionChallenge-Project/MotionChallenge-ufo/blob/main/admission.mjwarp.json",
+    "checkpoint_origin_status": "author_release_verified",
+    "checkpoint_origin_url": "https://github.com/MotionChallenge-Project/MotionChallenge-ufo/blob/main/validation/checkpoint-origin.json"
   }
 ]

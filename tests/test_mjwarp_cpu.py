@@ -54,9 +54,3 @@ class ReproductionTests(unittest.TestCase):
   a=self.write('a',self.result);b=self.write('b',self.result);(b/'result.json').write_text(json.dumps(self.result)+' ')
   with self.assertRaisesRegex(ValueError,'receipt'):compare(a,b)
 
-def load_tests(loader,tests,pattern):
- suite=unittest.TestSuite(tests)
- for module in ['test_alignment','test_encoding','test_reference_arrays','test_strict_observations','test_dataset_selection','test_streaming_archive','test_regression']:
-  suite.addTests(loader.loadTestsFromName(module))
- return suite
-

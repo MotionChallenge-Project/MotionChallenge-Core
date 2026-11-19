@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class BatchMetricTests(unittest.TestCase):
     def test_matches_independent_scalar_scores_and_failure_thresholds(self):
-        protocol = json.loads((ROOT/'suites/lafan/protocol.mujoco317-ideal-proprioception-none-v2.json').read_text())
+        protocol = json.loads((ROOT/'suites/lafan/protocol.mjwarp311-no-linear-velocity-v1.json').read_text())
         names = tuple(dict.fromkeys([*protocol['metric_bodies'], protocol['failure']['anchor_body']]))
         rng = np.random.default_rng(912)
         states, refs = [], []
@@ -49,7 +49,7 @@ class BatchMetricTests(unittest.TestCase):
     def test_array_gravity_preserves_threshold_decisions(self):
         threshold = .8
         angles = np.arccos(1-np.array([np.nextafter(threshold,0),threshold,np.nextafter(threshold,1)]))
-        q = Rotation.from_euler('x',angles).as_quat()
+        q = Rotation.from_euler('x',angles[:,None]).as_quat()
         expected = Rotation.from_quat(q).inv().apply((0.,0.,-1.))[:,2]
         np.testing.assert_array_equal(np.abs(gravity_z(q)+1)>threshold,np.abs(expected+1)>threshold)
         rng = np.random.default_rng(164)
@@ -57,7 +57,7 @@ class BatchMetricTests(unittest.TestCase):
         np.testing.assert_allclose(gravity_z(q),Rotation.from_quat(q).inv().apply((0.,0.,-1.))[:,2],rtol=0,atol=8e-16)
 
     def test_body_origin_velocities_match_jacobians(self):
-        world = World(ROOT/'robots/g1-29dof-cpu-v0.json')
+        world = World(ROOT/'robots/g1-29dof-mjwarp-v1.json')
         model,data = world.model,world.data
         rng = np.random.default_rng(33)
         jp,jr = np.empty((3,model.nv)),np.empty((3,model.nv))

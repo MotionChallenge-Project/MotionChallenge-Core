@@ -8,14 +8,14 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from motion_challenge.evaluation.batch_metrics import tracking_batch
-from motion_challenge.resources import lafan_paths
+from motion_challenge.resources import resource_root
 from motion_challenge.sdk import BodyState, StatePacket, ReferenceFrame
 from motion_challenge.simulation.physics import tracking_sample
 
 
 class RootFailureTests(unittest.TestCase):
     def setUp(self):
-        self.protocol = json.loads(lafan_paths('none')['protocol'].read_text())
+        self.protocol = json.loads((resource_root()/'suites/lafan/protocol.mjwarp311-no-linear-velocity-v1.json').read_text())
         self.bodies = tuple(BodyState(n, (0., 0., 0.), (0., 0., 0., 1.),
                                      (0.,)*3, (0.,)*3)
                             for n in self.protocol['metric_bodies'])
@@ -34,11 +34,11 @@ class RootFailureTests(unittest.TestCase):
         self.assertNotIn('end_effector_height_error_m', metrics)
         return metrics
 
-    def test_default_protocol_is_root_only_v2(self):
-        self.assertTrue(self.protocol['id'].endswith('v2'))
+    def test_current_protocols_share_root_failure_contract(self):
+        self.assertTrue(self.protocol['id'].endswith('no-position-no-linear-velocity-v1'))
         self.assertEqual(self.protocol['failure']['anchor_body'], 'pelvis')
         self.assertNotIn('end_effector_bodies', self.protocol['failure'])
-        early = json.loads(lafan_paths('early')['protocol'].read_text())
+        early = json.loads((resource_root()/'suites/seed/protocol.mjwarp311-no-linear-velocity-v1.json').read_text())
         self.assertEqual(early['failure'], self.protocol['failure'])
 
     def test_root_height_boundary(self):

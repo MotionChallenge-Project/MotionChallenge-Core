@@ -56,3 +56,11 @@ uv run motionchallenge-reproduce results/lafan results/lafan-repeat --output rep
 Reproduction compares matching data, checkpoint, adapter and simulator identities. Aggregate and per-motion numerical differences are reported separately from successful execution of the same pipeline.
 
 See [protocol](docs/PROTOCOL.md), [observations](docs/OBSERVATIONS.md), [adapter interface](docs/ADAPTERS.md), [datasets](docs/BENCHMARKS.md) and [batching](docs/BATCHING.md).
+
+## Author checkpoints and validation
+
+Ranked model entries use pinned original author releases. Each model repository records its author release URL, source artifact SHA256 and any local conversion chain in validation/checkpoint-origin.json. Duplicate exports of the same trained weights use one official checkpoint entry.
+
+The [model registry](docs/mjwarp-model-admissions.json) contains 23 checkpoints with verified batch inference and seven checkpoints excluded by the observation contract. Twenty-two checkpoints have complete independently verified LAFAN and SEED results. Humanoid-GPT 264 has conversion-parity evidence and numerical-failure diagnostics for both datasets; it has no ranked full-suite score.
+
+[4096-world throughput comparison](docs/performance/seed-core-4096-comparison.md): on an A100 80GB, Core/HEFT takes 38.509 ms per control step, compared with 42.782 ms for native SEED and 43.026 ms for SEED with Newton50. The measured window includes inference and simulation; policies and some runtime settings differ.

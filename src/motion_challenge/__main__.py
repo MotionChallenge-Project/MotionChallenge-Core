@@ -1,3 +1,3 @@
-from .cli import main
+from .runtime.mjwarp_entrypoint import main
 
 main()

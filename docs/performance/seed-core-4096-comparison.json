@@ -1,0 +1,511 @@
+{
+  "status": "completed_4096_world_benchmarks_with_idle_guard",
+  "device": "cuda:3",
+  "scope": "Different SEED native and HEFT policies; complete evaluation window throughput, not policy-identical engine speed. Core records pose traces.",
+  "core_time_over_seed_default": 0.9001182130223137,
+  "core_time_over_seed_newton50": 0.8950277402502949,
+  "runs": {
+    "seed": {
+      "status": "bounded_performance_benchmark",
+      "engine": "seed",
+      "device": "cuda:3",
+      "warmup_steps": 50,
+      "measured_steps": 500,
+      "parallel_envs": 4096,
+      "ranked": false,
+      "gpu_idle_guard": {
+        "status": "passed_20_second_zero_utilization_and_stable_context_memory",
+        "background_contexts": [],
+        "idle_samples": [
+          {
+            "relative_s": 0.3058074004948139,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 1.507375780493021,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 2.698586732149124,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 3.962063182145357,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 5.156880363821983,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 6.3451598063111305,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 7.522409837692976,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 8.722827468067408,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 9.929247573018074,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 11.117509242147207,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 12.304662708193064,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 13.505077321082354,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 14.714592911303043,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 15.891041778028011,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 17.071610670536757,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 18.46239710599184,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 19.654018331319094,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 21.086335204541683,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 22.381339881569147,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 23.587711345404387,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 24.788742691278458,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          }
+        ],
+        "scope": "Existing static CUDA contexts remain resident; no concurrent GPU computation observed before the window. These contexts are not terminated."
+      },
+      "versions": {
+        "torch": "2.14.1",
+        "mujoco": "3.11.0",
+        "mujoco-warp": "3.11.0",
+        "warp-lang": "1.18.0"
+      },
+      "python_version": "3.12.3",
+      "comparison_scope": "Different native SEED and HEFT policies; compare complete evaluation window throughput, not policy-identical engine speed.",
+      "benchmark_script_sha256": "0d223ec34761673de010d1163bc77d5211d9071648525c908465c74a5b8565cc",
+      "native_checkpoint_observation_config_sha256": "cb44b7e69291c337512aeb0fd8feff88b0de96d70b7125859853765299cfd2f5",
+      "native_actor_command_dimension": 380,
+      "native_actor_command_order": [
+        "command_joint_pos_rel",
+        "command_root_pos_b",
+        "command_root_ori_b"
+      ],
+      "native_actual_global_position_dependency": true,
+      "policy_admission_scope": "Native SEED performance baseline only; its root-position-dependent policy is not a Core no-global-position leaderboard entry.",
+      "physics": {
+        "control_period_s": 0.02,
+        "physics_dt_s": 0.005,
+        "substeps": 4,
+        "newton_iterations": 10,
+        "line_search_iterations": 20,
+        "nconmax": 100,
+        "njmax": 1024,
+        "actual_sliding_friction_values": [
+          1.0
+        ]
+      },
+      "policy": "SEED native trained checkpoint",
+      "tf32_matmul": true,
+      "tf32_cudnn": true,
+      "action_dtype": "torch.float32",
+      "cuda_autocast_enabled": false,
+      "numerical_health": {
+        "finite_qpos": true,
+        "overflow": false,
+        "overflow_scope": "final control-step snapshot; native intermediate flags are not retained"
+      },
+      "torch_peak_allocated_bytes": 55915659264,
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "wall_s": 21.39115658774972,
+      "mean_vector_step_ms": 42.78231317549944,
+      "transitions_per_s": 95740.49872426478,
+      "scope": "Steady-state policy, simulation, observation/reference update and scoring; setup excluded. Core includes pose traces; SEED does not."
+    },
+    "seed-newton50": {
+      "status": "bounded_performance_benchmark",
+      "engine": "seed",
+      "device": "cuda:3",
+      "warmup_steps": 50,
+      "measured_steps": 500,
+      "parallel_envs": 4096,
+      "ranked": false,
+      "gpu_idle_guard": {
+        "status": "passed_20_second_zero_utilization_and_stable_context_memory",
+        "background_contexts": [],
+        "idle_samples": [
+          {
+            "relative_s": 2.5423335433006287,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 3.722823239862919,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 4.92108777910471,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 6.12143387645483,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 7.306959766894579,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 8.537204343825579,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 9.749300420284271,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 10.946816008538008,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 12.137771375477314,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 13.340208351612091,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 14.545974984765053,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 15.98592884093523,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 17.26119913905859,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 18.447632677853107,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 19.645109623670578,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 20.84987272694707,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 22.04005841910839,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 23.247336644679308,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 24.469751838594675,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 25.65836126357317,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 26.88560276851058,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          }
+        ],
+        "scope": "Existing static CUDA contexts remain resident; no concurrent GPU computation observed before the window. These contexts are not terminated."
+      },
+      "versions": {
+        "torch": "2.14.1",
+        "mujoco": "3.11.0",
+        "mujoco-warp": "3.11.0",
+        "warp-lang": "1.18.0"
+      },
+      "python_version": "3.12.3",
+      "comparison_scope": "Different native SEED and HEFT policies; compare complete evaluation window throughput, not policy-identical engine speed.",
+      "benchmark_script_sha256": "0d223ec34761673de010d1163bc77d5211d9071648525c908465c74a5b8565cc",
+      "native_checkpoint_observation_config_sha256": "cb44b7e69291c337512aeb0fd8feff88b0de96d70b7125859853765299cfd2f5",
+      "native_actor_command_dimension": 380,
+      "native_actor_command_order": [
+        "command_joint_pos_rel",
+        "command_root_pos_b",
+        "command_root_ori_b"
+      ],
+      "native_actual_global_position_dependency": true,
+      "policy_admission_scope": "Native SEED performance baseline only; its root-position-dependent policy is not a Core no-global-position leaderboard entry.",
+      "physics": {
+        "control_period_s": 0.02,
+        "physics_dt_s": 0.005,
+        "substeps": 4,
+        "newton_iterations": 50,
+        "line_search_iterations": 20,
+        "nconmax": 100,
+        "njmax": 1024,
+        "actual_sliding_friction_values": [
+          1.0
+        ]
+      },
+      "policy": "SEED native trained checkpoint",
+      "tf32_matmul": true,
+      "tf32_cudnn": true,
+      "action_dtype": "torch.float32",
+      "cuda_autocast_enabled": false,
+      "numerical_health": {
+        "finite_qpos": true,
+        "overflow": false,
+        "overflow_scope": "final control-step snapshot; native intermediate flags are not retained"
+      },
+      "torch_peak_allocated_bytes": 55915659264,
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "wall_s": 21.512818850576878,
+      "mean_vector_step_ms": 43.025637701153755,
+      "transitions_per_s": 95199.05383971016,
+      "scope": "Steady-state policy, simulation, observation/reference update and scoring; setup excluded. Core includes pose traces; SEED does not."
+    },
+    "core": {
+      "status": "bounded_performance_benchmark",
+      "engine": "core",
+      "device": "cuda:3",
+      "warmup_steps": 50,
+      "measured_steps": 500,
+      "parallel_envs": 4096,
+      "ranked": false,
+      "gpu_idle_guard": {
+        "status": "passed_20_second_zero_utilization_and_stable_context_memory",
+        "background_contexts": [],
+        "idle_samples": [
+          {
+            "relative_s": 2.553261511027813,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 3.7349990978837013,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 4.929701771587133,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 6.123063560575247,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 7.342970244586468,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 8.694138459861279,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 9.88494361191988,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 11.093366958200932,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 12.295501668006182,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 13.47263864800334,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 14.6643046438694,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 15.871124293655157,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 17.056178707629442,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 18.255201417952776,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 19.474705524742603,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 20.675679184496403,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 21.86373534053564,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 23.243084833025932,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 24.425779465585947,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 25.624924436211586,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          },
+          {
+            "relative_s": 26.823776558041573,
+            "gpu_utilization_percent": 0,
+            "gpu_memory_mib": 0
+          }
+        ],
+        "scope": "Existing static CUDA contexts remain resident; no concurrent GPU computation observed before the window. These contexts are not terminated."
+      },
+      "versions": {
+        "torch": "2.14.1",
+        "mujoco": "3.11.0",
+        "mujoco-warp": "3.11.0",
+        "warp-lang": "1.18.0"
+      },
+      "python_version": "3.12.3",
+      "comparison_scope": "Different native SEED and HEFT policies; compare complete evaluation window throughput, not policy-identical engine speed.",
+      "benchmark_script_sha256": "0d223ec34761673de010d1163bc77d5211d9071648525c908465c74a5b8565cc",
+      "physics": {
+        "backend": "mjwarp",
+        "precision": "torch.float32",
+        "versions": {
+          "mujoco": "3.11.0",
+          "mujoco-warp": "3.11.0",
+          "warp-lang": "1.18.0",
+          "torch": "2.14.1"
+        },
+        "worlds": 4096,
+        "substeps": 4,
+        "nconmax": 100,
+        "njmax": 4096,
+        "cuda_graph": true,
+        "control_period_s": 0.02,
+        "physics_dt_s": 0.005,
+        "newton_iterations": 50,
+        "line_search_iterations": 20,
+        "actual_sliding_friction_values": [
+          1.0
+        ]
+      },
+      "policy": "HEFT pinned deployment checkpoint",
+      "tf32_matmul": false,
+      "tf32_cudnn": false,
+      "action_dtype": "torch.float32",
+      "cuda_autocast_enabled": false,
+      "numerical_health": {
+        "finite_qpos": true,
+        "overflow": false,
+        "overflow_scope": "sticky every physics substep"
+      },
+      "torch_peak_allocated_bytes": 31848296960,
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "wall_s": 19.25456964224577,
+      "mean_vector_step_ms": 38.50913928449154,
+      "transitions_per_s": 106364.36119073551,
+      "scope": "Steady-state policy, simulation, observation/reference update and scoring; setup excluded. Core includes pose traces; SEED does not."
+    }
+  }
+}

@@ -9,3 +9,5 @@ The SDK exposes only allowed observations. References contain root/joint quantit
 Conversion hooks receive root, runtime, source, output, artifacts and device. They write only to the supplied output/cache directory. Original checkpoints, auxiliary assets and converted artifacts are content-checked. Additional production files are pinned through tensor_assets_sha256.
 
 Validation compares original inference, observation assembly, histories, reset behavior and complete 4096-environment inference. Keep development proofs immutable. Store evaluation/reproduction reports separately without changing admission identities.
+
+Original author releases are pinned by immutable URL and SHA256. If a native checkpoint needs a deployment export, the repository supplies the local export hook and verifies the complete native-to-batched inference chain. Keep original and converted weights in the cache, and record the author release chain in validation/checkpoint-origin.json.

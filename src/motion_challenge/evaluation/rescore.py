@@ -97,7 +97,7 @@ def rescore(run, output, suite, robot, original_protocol, protocol, prefix_proto
     for before,after in zip(full['clips'],complete):
         for key in ('mpjpe_world_m','mpjpe_xy_aligned_m','mpjpe_xy_yaw_aligned_m'):
             if not math.isclose(before['metric_means_over_observed_prefix'][key],after['metric_means_over_observed_prefix'][key],abs_tol=1e-9,rel_tol=1e-7):
-                raise ValueError('unchanged full-motion MPBPE differs: '+before['id']+' '+key)
+                raise ValueError('unchanged full-motion MPJPE differs: '+before['id']+' '+key)
             max_full_delta=max(max_full_delta,abs(before['metric_means_over_observed_prefix'][key]-after['metric_means_over_observed_prefix'][key]))
         src=confined_path(run/'rollout',before['trace']['path']);target=dest/Path(before['trace']['path']).name
         try:os.link(src,target)

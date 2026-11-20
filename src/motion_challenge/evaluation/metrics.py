@@ -21,7 +21,7 @@ def orientation_error_rad(actual_xyzw, reference_xyzw):
     return 2.0 * math.acos(dot)
 
 
-def mpjpe_m(actual_positions, reference_positions):
+def mpkpe_m(actual_positions, reference_positions):
     if not actual_positions or len(actual_positions) != len(reference_positions):
         raise ValueError("body positions must be nonempty and have equal length")
     errors = []

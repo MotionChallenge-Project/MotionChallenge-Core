@@ -41,9 +41,9 @@ def keybody_position_errors(actual, reference, actual_root, reference_root,
     rx[:, :2] -= rr[:2]
     mean_distance = lambda x, y: float(np.linalg.norm(x-y, axis=1).mean())
     return {
-        'mpjpe_world_m': mean_distance(a, r),
-        'mpjpe_xy_aligned_m': mean_distance(ax, rx),
-        'mpjpe_xy_yaw_aligned_m': mean_distance(yaw.apply(ax), rx),
+        'mpkpe_world_m': mean_distance(a, r),
+        'mpkpe_xy_aligned_m': mean_distance(ax, rx),
+        'mpkpe_xy_yaw_aligned_m': mean_distance(yaw.apply(ax), rx),
         'root_xy_error_m': float(np.linalg.norm(ar[:2]-rr[:2])),
         'root_height_error_m': float(abs(ar[2]-rr[2])),
         'root_yaw_correction_abs_rad': float(abs(angle)),

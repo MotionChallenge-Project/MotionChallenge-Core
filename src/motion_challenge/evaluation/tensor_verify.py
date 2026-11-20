@@ -18,7 +18,7 @@ from motion_challenge.data.array_reference import slerp_arrays
 from motion_challenge.evaluation.batch_metrics import tracking_arrays
 
 _STATE=None
-KEYS=("mpjpe_world_m","mpjpe_xy_aligned_m","mpjpe_xy_yaw_aligned_m","joint_mae_rad","anchor_height_error_m","anchor_gravity_z_error")
+KEYS=("mpkpe_world_m","mpkpe_xy_aligned_m","mpkpe_xy_yaw_aligned_m","joint_mae_rad","anchor_height_error_m","anchor_gravity_z_error")
 
 
 def initialize(prepared,protocol):

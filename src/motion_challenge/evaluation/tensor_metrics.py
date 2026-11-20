@@ -1,7 +1,7 @@
 """GPU metric implementation, independently checked against NumPy/CPU."""
 import torch
 from motion_challenge.simulation.tensor_math import normalize,multiply,conjugate
-NAMES=("mpjpe_world_m","mpjpe_xy_aligned_m","mpjpe_xy_yaw_aligned_m","joint_mae_rad","anchor_height_error_m","anchor_gravity_z_error")
+NAMES=("mpkpe_world_m","mpkpe_xy_aligned_m","mpkpe_xy_yaw_aligned_m","joint_mae_rad","anchor_height_error_m","anchor_gravity_z_error")
 
 def score(ap,aq,joints,rp,rq,ref_joints,root_row,body_rows,protocol):
     ap,rp=ap.double(),rp.double()

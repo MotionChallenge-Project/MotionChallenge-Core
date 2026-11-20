@@ -51,8 +51,8 @@ def tracking_arrays(actual, desired, joints, ref_joints, ar, rr, aq, rq, protoco
         'joint_mae_rad': np.abs(joints-ref_joints).mean(axis=1),
         'root_position_error_m': np.linalg.norm(ar-rr,axis=1),
         'root_orientation_error_rad': 2*np.arctan2(np.linalg.norm(relative[:,:3],axis=1),np.abs(relative[:,3])),
-        'mpjpe_world_m': mean_distance(ap,rp),
-        'mpjpe_root_relative_world_axes_m': mean_distance(ap-ar[:,None,:],rp-rr[:,None,:]),
+        'mpkpe_world_m': mean_distance(ap,rp),
+        'mpkpe_root_relative_world_axes_m': mean_distance(ap-ar[:,None,:],rp-rr[:,None,:]),
         'anchor_height_error_m': height,
         'anchor_gravity_z_error': gravity,
     }
@@ -74,8 +74,8 @@ def tracking_arrays(actual, desired, joints, ref_joints, ar, rr, aq, rq, protoco
         aligned = ax.copy()
         aligned[:,:,0] = c*ax[:,:,0]-s*ax[:,:,1]
         aligned[:,:,1] = s*ax[:,:,0]+c*ax[:,:,1]
-        metrics.update(mpjpe_xy_aligned_m=mean_distance(ax,rx),
-            mpjpe_xy_yaw_aligned_m=mean_distance(aligned,rx),
+        metrics.update(mpkpe_xy_aligned_m=mean_distance(ax,rx),
+            mpkpe_xy_yaw_aligned_m=mean_distance(aligned,rx),
             root_xy_error_m=np.linalg.norm(ar[:,:2]-rr[:,:2],axis=1),
             root_height_error_m=np.abs(ar[:,2]-rr[:,2]),
             root_yaw_correction_abs_rad=np.abs(angle),

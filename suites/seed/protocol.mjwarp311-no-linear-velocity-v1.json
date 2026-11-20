@@ -65,7 +65,7 @@
   },
   "primary_metric": {
     "scope": "full_motion",
-    "field": "mpjpe_xy_aligned_m",
+    "field": "mpkpe_xy_aligned_m",
     "order": "ascending"
   },
   "backend": "mjwarp",

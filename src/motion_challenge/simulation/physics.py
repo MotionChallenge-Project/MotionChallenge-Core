@@ -235,8 +235,8 @@ def tracking_sample(state, reference, protocol):
         'joint_mae_rad': float(np.abs(np.asarray(state.joint_position_rad)-reference.joint_position_rad).mean()),
         'root_position_error_m': float(np.linalg.norm(ar-rr)),
         'root_orientation_error_rad': float(rotation.magnitude()),
-        'mpjpe_world_m': float(np.linalg.norm(ap-rp, axis=1).mean()),
-        'mpjpe_root_relative_world_axes_m': float(np.linalg.norm((ap-ar)-(rp-rr), axis=1).mean()),
+        'mpkpe_world_m': float(np.linalg.norm(ap-rp, axis=1).mean()),
+        'mpkpe_root_relative_world_axes_m': float(np.linalg.norm((ap-ar)-(rp-rr), axis=1).mean()),
         'anchor_height_error_m': float(height_error),
         'anchor_gravity_z_error': float(gravity_z_error),
     }

@@ -43,14 +43,14 @@ Use Linux x86-64, Python 3.12 and an NVIDIA GPU compatible with the locked CUDA 
 | Inference | Full environment batch |
 | Observation exclusions | Actual global position and actual linear velocity in every frame |
 | Failure | Pelvis height error > 0.25 m or gravity-Z error > 0.8 |
-| Position metric | MPJPE; 14 protocol-defined body-origin keypoints |
+| Position metric | MPKPE; 14 protocol-defined body-origin keypoints |
 | Aggregation | Equal weight per motion |
 
 Policies receive allowed state and root/joint reference information. Adapters construct their own reference features. Core precomputes scoring reference body poses with MuJoCo Warp before rollout and reads actual body poses from simulation.
 
 All motions run to the endpoint. Results report success, completion and tracking errors over the complete motion and the prefix through first failure. Numerical simulation failures do not produce a ranked full-suite score.
 
-MPJPE (Mean Per-Joint Position Error) measures the 3D Euclidean distance between actual and reference keypoint positions. The protocol defines these keypoints at robot body-frame origins: 14 points for G1. Errors are averaged over keypoints and scoring samples within each motion, then motions are weighted equally. Results report full-motion and first-failure-prefix scores with no alignment, XY alignment, and XY + yaw alignment. XY alignment removes pelvis horizontal translation while retaining height error. Leaderboard values are reported in millimetres (mm).
+MPKPE (Mean Per-Keypoint Position Error) measures the 3D Euclidean distance between actual and reference keypoint positions. The protocol defines these keypoints at robot body-frame origins: 14 points for G1. Errors are averaged over keypoints and scoring samples within each motion, then motions are weighted equally. Results report full-motion and first-failure-prefix scores with no alignment, XY alignment, and XY + yaw alignment. XY alignment removes pelvis horizontal translation while retaining height error. Leaderboard values are reported in millimetres (mm).
 
 ## Caches and evidence
 

@@ -53,7 +53,7 @@ class RootFailureTests(unittest.TestCase):
                                orientation_xyzw=(1., 0., 0., 0.))
                        if b.name!='pelvis' else b for b in self.bodies)
         metrics = self.check(replace(self.state, bodies=bodies), [])
-        self.assertGreater(metrics['mpjpe_xy_aligned_m'], 1.)
+        self.assertGreater(metrics['mpkpe_xy_aligned_m'], 1.)
 
     def test_root_tilt_and_yaw(self):
         for tilt in (.8-1e-7, .8+1e-7):
